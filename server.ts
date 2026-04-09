@@ -58,10 +58,13 @@ ${message}
       server: { middlewareMode: true },
       appType: "spa",
     });
+    app.use(express.static(path.join(process.cwd(), 'public')));
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    
+    // Serve index.html for all other routes (SPA fallback)
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
