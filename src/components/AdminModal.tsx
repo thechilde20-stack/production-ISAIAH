@@ -561,7 +561,7 @@ export default function AdminModal() {
       '연세대학교', '서울시여성단체협의회', '주식회사 예림'
     ].map((name, index) => ({
       name,
-      logoUrl: `https://via.placeholder.com/200x100?text=${encodeURIComponent(name)}`,
+      logoUrl: `https://picsum.photos/seed/${encodeURIComponent(name)}/200/100`,
       order: index,
       isFeatured: true
     }));
@@ -629,7 +629,7 @@ export default function AdminModal() {
   const addPartner = async () => {
     const newPartner = {
       name: '새 협력사',
-      logoUrl: 'https://via.placeholder.com/200x100?text=Logo',
+      logoUrl: 'https://picsum.photos/seed/partner/200/100',
       order: partners.length,
       isFeatured: true
     };
