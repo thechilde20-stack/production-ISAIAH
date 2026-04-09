@@ -599,8 +599,15 @@ export default function AdminModal() {
       try {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-      } catch (err) {
+        setError(false);
+      } catch (err: any) {
         console.error('Login failed:', err);
+        // 구글 로그인 실패 시 에러 메시지 세분화
+        if (err.code === 'auth/unauthorized-domain') {
+          alert('현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다.\nFirebase 콘솔에서 도메인을 추가해주세요.');
+        } else {
+          alert('구글 로그인 중 오류가 발생했습니다: ' + err.message);
+        }
         setError(true);
       }
     } else {

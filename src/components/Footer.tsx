@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           <div className="flex flex-col items-center md:items-start space-y-2">
             <img 
-              src="/logo.png" 
+              src="logo.png" 
               alt="PRODUCTION ISAIAH" 
               className="h-6 md:h-8 w-auto object-contain"
               onError={(e) => {
