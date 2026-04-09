@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Cloud } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import logo from '../assets/logo.png';
 
 const navItems = [
   { name: 'ABOUT', href: '#about' },
@@ -33,7 +34,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <a href="/" className="flex items-center">
           <img 
-            src="logo.png" 
+            src={logo} 
             alt="PRODUCTION ISAIAH" 
             className="h-8 md:h-10 w-auto object-contain"
             onError={(e) => {
