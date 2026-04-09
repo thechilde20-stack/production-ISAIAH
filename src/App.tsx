@@ -71,7 +71,7 @@ export default function App() {
       <Navbar />
       <main>
         <Hero settings={settings} />
-        <AboutSection settings={settings} />
+        <AboutSection />
         <ServiceSection />
         <PortfolioSection />
         <ProcessSection />

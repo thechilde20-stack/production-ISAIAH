@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
 import { Lightbulb, Rocket, BookOpen, Layers } from 'lucide-react';
-import { SiteSettings } from '../types';
 
 const whyIsaiah = [
   {
@@ -25,7 +24,7 @@ const whyIsaiah = [
   },
 ];
 
-export default function AboutSection({ settings }: { settings: SiteSettings | null }) {
+export default function AboutSection() {
   return (
     <section id="about" className="py-24 bg-[#0a0a0a] text-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
@@ -43,24 +42,18 @@ export default function AboutSection({ settings }: { settings: SiteSettings | nu
             </h2>
             
             <div className="space-y-8 text-white/60 text-lg leading-relaxed font-light whitespace-pre-line">
-              {settings?.aboutShortText ? (
-                <p>{settings.aboutShortText}</p>
-              ) : (
-                <>
-                  <p>
-                    프로덕션 이사야(ISAIAH)는 영상이 지닌 힘을 믿습니다.<br />
-                    화려함을 쫓기보다, 클라이언트가 진정으로 전달하고자 하는 메시지의 본질을 먼저 묻습니다.
-                  </p>
-                  <p>
-                    공공기관의 정책 홍보부터 기업 브랜드 필름, 깊이 있는 다큐멘터리까지 —<br />
-                    프로젝트의 성격과 맥락에 맞는 스토리텔링과 연출로, 시청자의 마음에 오래 남는 결과물을 만들어냅니다.
-                  </p>
-                  <p>
-                    기획에서 촬영, 편집, 운영 지원까지 이어지는 통합 제작 시스템을 바탕으로<br />
-                    가장 효율적이고 전문적인 영상 솔루션을 제공합니다.
-                  </p>
-                </>
-              )}
+              <p>
+                프로덕션 이사야(ISAIAH)는 영상이 지닌 힘을 믿습니다.<br />
+                화려함을 쫓기보다, 클라이언트가 진정으로 전달하고자 하는 메시지의 본질을 먼저 묻습니다.
+              </p>
+              <p>
+                공공기관의 정책 홍보부터 기업 브랜드 필름, 깊이 있는 다큐멘터리까지 —<br />
+                프로젝트의 성격과 맥락에 맞는 스토리텔링과 연출로, 시청자의 마음에 오래 남는 결과물을 만들어냅니다.
+              </p>
+              <p>
+                기획에서 촬영, 편집, 운영 지원까지 이어지는 통합 제작 시스템을 바탕으로<br />
+                가장 효율적이고 전문적인 영상 솔루션을 제공합니다.
+              </p>
             </div>
           </motion.div>
 

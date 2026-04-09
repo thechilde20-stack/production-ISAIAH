@@ -7,6 +7,7 @@ import { db, handleFirestoreError, OperationType } from '@/src/firebase';
 import { PortfolioItem } from '@/src/types';
 
 const INITIAL_ITEMS = 6;
+const BATCH_SIZE = 20;
 
 const MOCK_PORTFOLIO: PortfolioItem[] = [
   { id: '1', title: '뮤지컬 루쓰! 배우 선예, 이지훈, 김다현', category: '유튜브 토크쇼', thumbnail: '', videoUrl: 'iM8_tSZ_K_I', info: '유튜브 토크쇼 (별다방토크)', order: 1, createdAt: Date.now() },
@@ -87,9 +88,22 @@ export default function PortfolioSection() {
   const toggleExpand = () => {
     if (isExpanded) {
       setVisibleCount(INITIAL_ITEMS);
-      document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' });
+      // Scroll back to the top of the section when collapsing
+      const section = document.getElementById('work');
+      if (section) {
+        const offset = 100; // Adjust for navbar
+        const bodyRect = document.body.getBoundingClientRect().top;
+        const elementRect = section.getBoundingClientRect().top;
+        const elementPosition = elementRect - bodyRect;
+        const offsetPosition = elementPosition - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     } else {
-      setVisibleCount(portfolio.length);
+      setVisibleCount(prev => Math.min(prev + BATCH_SIZE, portfolio.length));
     }
   };
 
@@ -156,19 +170,21 @@ export default function PortfolioSection() {
           </AnimatePresence>
         </div>
 
-        <div className="mt-16 flex justify-center">
-          <button
-            onClick={toggleExpand}
-            className="group flex flex-col items-center space-y-2 text-white/40 hover:text-amber-500 transition-colors"
-          >
-            <span className="text-xs font-bold tracking-[0.3em] uppercase">
-              {isExpanded ? 'View Less' : 'View More'}
-            </span>
-            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:border-amber-500 transition-colors">
-              {isExpanded ? <ChevronUp /> : <ChevronDown />}
-            </div>
-          </button>
-        </div>
+        {portfolio.length > INITIAL_ITEMS && (
+          <div className="mt-16 flex justify-center">
+            <button
+              onClick={toggleExpand}
+              className="group flex flex-col items-center space-y-2 text-white/40 hover:text-amber-500 transition-colors"
+            >
+              <span className="text-xs font-bold tracking-[0.3em] uppercase">
+                {isExpanded ? 'View Less' : 'View More'}
+              </span>
+              <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:border-amber-500 transition-colors">
+                {isExpanded ? <ChevronUp /> : <ChevronDown />}
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Video Modal */}
