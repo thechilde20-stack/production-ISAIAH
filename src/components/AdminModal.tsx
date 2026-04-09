@@ -29,6 +29,7 @@ function PortfolioItemRow({
   const [localVideoUrl, setLocalVideoUrl] = useState(item.videoUrl);
   const [localInfo, setLocalInfo] = useState(item.info || '');
   const [localCategory, setLocalCategory] = useState(item.category);
+  const [localThumbnail, setLocalThumbnail] = useState(item.thumbnail || '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -36,6 +37,7 @@ function PortfolioItemRow({
   useEffect(() => { setLocalVideoUrl(item.videoUrl); }, [item.videoUrl]);
   useEffect(() => { setLocalInfo(item.info || ''); }, [item.info]);
   useEffect(() => { setLocalCategory(item.category); }, [item.category]);
+  useEffect(() => { setLocalThumbnail(item.thumbnail || ''); }, [item.thumbnail]);
 
   const handleBlur = (field: string, value: string) => {
     let finalValue = value;
@@ -69,6 +71,7 @@ function PortfolioItemRow({
     reader.onload = async () => {
       try {
         const base64 = reader.result as string;
+        setLocalThumbnail(base64);
         await onUpdate(item.id, { thumbnail: base64 });
         setIsUploading(false);
       } catch (err: any) {
@@ -112,10 +115,10 @@ function PortfolioItemRow({
       </div>
 
       <div className="relative w-32 aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-white/5 group/thumb">
-        {item.thumbnail ? (
-          <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
+        {localThumbnail ? (
+          <img src={localThumbnail} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : localVideoUrl && localVideoUrl !== 'placeholder' ? (
-          <img src={`https://img.youtube.com/vi/${localVideoUrl}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" />
+          <img src={`https://img.youtube.com/vi/${localVideoUrl}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
           <ImageIcon className="w-6 h-6 text-white/10" />
         )}

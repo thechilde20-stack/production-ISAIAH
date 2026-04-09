@@ -58,7 +58,7 @@ export default function Hero({ settings }: HeroProps) {
             {settings?.heroSubcopy || '프로덕션 이사야'}
           </h4>
           <h1 className="text-4xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-300 leading-tight tracking-tighter whitespace-pre-line">
-            {settings?.heroHeadline || '사람의 마음을 움직이고,\n브랜드 메세지는 선명하게!'}
+            {settings?.heroHeadline || '마음을 움직이고,\n메세지는 선명하게!'}
           </h1>
           <p className="text-white/60 text-sm md:text-lg font-medium leading-relaxed max-w-2xl ml-auto whitespace-pre-line">
             {settings?.heroDescription || '공공기관·브랜드·다큐멘터리·교육 콘텐츠를\n기획부터 완성까지, 신뢰할 수 있는 파트너 프로덕션 이사야입니다.'}

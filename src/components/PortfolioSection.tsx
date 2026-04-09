@@ -32,6 +32,11 @@ function YoutubeThumbnail({ videoId, alt }: { videoId: string; alt: string }) {
   const [src, setSrc] = useState(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    setSrc(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
+    setHasError(false);
+  }, [videoId]);
+
   const handleError = () => {
     if (!hasError) {
       setSrc(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
@@ -116,7 +121,18 @@ export default function PortfolioSection() {
                 className="group cursor-pointer relative aspect-video rounded-xl overflow-hidden bg-white/5"
                 onClick={() => setSelectedVideo(item.videoUrl)}
               >
-                <YoutubeThumbnail videoId={item.videoUrl} alt={item.title} />
+                <div className="relative aspect-video overflow-hidden">
+                  {item.thumbnail ? (
+                    <img
+                      src={item.thumbnail}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <YoutubeThumbnail videoId={item.videoUrl} alt={item.title} />
+                  )}
+                </div>
                 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center p-6 text-center backdrop-blur-[2px]">
