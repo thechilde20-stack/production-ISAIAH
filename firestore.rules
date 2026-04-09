@@ -1,0 +1,144 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: portfolio
+// Document ID: auto-generated
+// Fields:
+//   - title: string (required, 1-200 chars)
+//   - category: string (required, 1-100 chars)
+//   - thumbnail: string (required, URL)
+//   - videoUrl: string (required, 1-100 chars)
+//   - info: string (optional, 1-500 chars)
+//   - order: number (required)
+//   - createdAt: number (required)
+//
+// Collection: contacts
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 1-100 chars)
+//   - email: string (required, email format)
+//   - phone: string (required, 1-20 chars)
+//   - message: string (required, 1-2000 chars)
+//   - createdAt: number (required)
+//
+// Collection: partners
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, 1-100 chars)
+//   - logoUrl: string (required, URL)
+//   - order: number (required)
+//   - isFeatured: bool (required)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "thechilde77@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (
+        url.matches("^https?://.*") || 
+        url.startsWith("data:image/")
+      );
+    }
+
+    // ===============================================================
+    // Portfolio Rules
+    // ===============================================================
+    
+    match /portfolio/{itemId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPortfolio(request.resource.data) && hasRequiredPortfolioFields(request.resource.data);
+      allow update: if isAdmin() && isValidPortfolio(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    function hasRequiredPortfolioFields(data) {
+      return data.keys().hasAll(['title', 'category', 'videoUrl', 'order', 'createdAt']);
+    }
+
+    function isValidPortfolio(data) {
+      return (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('thumbnail' in data) || (data.thumbnail is string && data.thumbnail.size() <= 1000000)) &&
+             (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 100)) &&
+             (!('info' in data) || (data.info is string && data.info.size() <= 500)) &&
+             (!('order' in data) || data.order is number) &&
+             (!('createdAt' in data) || data.createdAt is number);
+    }
+
+    // ===============================================================
+    // Partners Rules
+    // ===============================================================
+    
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPartner(request.resource.data) && hasRequiredPartnerFields(request.resource.data);
+      allow update: if isAdmin() && isValidPartner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    function hasRequiredPartnerFields(data) {
+      return data.keys().hasAll(['name', 'order', 'isFeatured']);
+    }
+
+    function isValidPartner(data) {
+      return (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+             (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 1000000)) &&
+             (!('order' in data) || data.order is number) &&
+             (!('isFeatured' in data) || data.isFeatured is bool);
+    }
+
+    // ===============================================================
+    // Contact Rules
+    // ===============================================================
+    
+    match /contacts/{contactId} {
+      allow create: if isValidContact(request.resource.data);
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    function isValidContact(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'message', 'createdAt']) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 20 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
+             data.createdAt is number;
+    }
+
+    // ===============================================================
+    // Site Settings Rules
+    // ===============================================================
+    
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

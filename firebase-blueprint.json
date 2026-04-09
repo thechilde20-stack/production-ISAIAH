@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "portfolio": {
+      "title": "Portfolio Item",
+      "description": "A portfolio item representing a video production work.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the work."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the work (e.g., YouTube, Brand Film)."
+        },
+        "thumbnail": {
+          "type": "string",
+          "description": "URL of the thumbnail image."
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "YouTube video ID or URL."
+        },
+        "info": {
+          "type": "string",
+          "description": "Detailed info about the work (client, description, etc.)."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp of creation."
+        }
+      },
+      "required": ["title", "category", "thumbnail", "videoUrl", "order", "createdAt"]
+    },
+    "contacts": {
+      "title": "Contact Message",
+      "description": "A message sent from the contact form.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sender's name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Sender's email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Sender's phone number."
+        },
+        "message": {
+          "type": "string",
+          "description": "The message content."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp of message."
+        }
+      },
+      "required": ["name", "email", "phone", "message", "createdAt"]
+    },
+    "partners": {
+      "title": "Partner",
+      "description": "A partner organization logo and info.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The partner name."
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "URL of the partner logo."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order."
+        },
+        "isFeatured": {
+          "type": "boolean",
+          "description": "Whether to feature this partner."
+        }
+      },
+      "required": ["name", "logoUrl", "order", "isFeatured"]
+    }
+  },
+  "firestore": {
+    "portfolio": {
+      "schema": { "$ref": "portfolio" },
+      "description": "Collection of portfolio items."
+    },
+    "contacts": {
+      "schema": { "$ref": "contacts" },
+      "description": "Collection of contact messages."
+    },
+    "partners": {
+      "schema": { "$ref": "partners" },
+      "description": "Collection of partner logos."
+    }
+  }
+}
