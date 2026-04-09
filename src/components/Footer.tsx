@@ -1,5 +1,3 @@
-import logo from '../assets/logo.png';
-
 export default function Footer() {
   return (
     <footer className="bg-black text-white/40 py-12 border-t border-white/5">
@@ -7,11 +5,12 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           <div className="flex flex-col items-center md:items-start space-y-2">
             <img 
-              src={logo} 
+              src="/logo.png" 
               alt="PRODUCTION ISAIAH" 
               className="h-6 md:h-8 w-auto object-contain"
+              referrerPolicy="no-referrer"
               onError={(e) => {
-                console.error("Footer logo failed to load:", e);
+                console.error("Footer logo failed to load. Path tried: /logo.png");
                 e.currentTarget.style.display = 'none';
                 e.currentTarget.parentElement!.insertAdjacentHTML('afterbegin', `
                   <span class="text-white font-bold tracking-tighter text-xl">

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Cloud } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import logo from '../assets/logo.png';
 
 const navItems = [
   { name: 'ABOUT', href: '#about' },
@@ -34,11 +33,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <a href="/" className="flex items-center">
           <img 
-            src={logo} 
+            src="/logo.png" 
             alt="PRODUCTION ISAIAH" 
             className="h-8 md:h-10 w-auto object-contain"
+            referrerPolicy="no-referrer"
             onError={(e) => {
-              console.error("Logo failed to load:", e);
+              console.error("Navbar logo failed to load. Path tried: /logo.png");
               // Fallback to text if image fails to load
               e.currentTarget.style.display = 'none';
               e.currentTarget.parentElement!.innerHTML = `
