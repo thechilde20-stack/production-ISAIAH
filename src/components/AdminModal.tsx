@@ -314,22 +314,14 @@ function PartnerRow({
         )}
       </div>
 
-      <div className="flex-1 grid grid-cols-2 gap-4">
+      <div className="flex-1">
         <input
           type="text"
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
           onBlur={(e) => handleBlur('name', e.target.value)}
           placeholder="기관명"
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-        />
-        <input
-          type="text"
-          value={localLogoUrl}
-          onChange={(e) => setLocalLogoUrl(e.target.value)}
-          onBlur={(e) => handleBlur('logoUrl', e.target.value)}
-          placeholder="로고 이미지 URL"
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
         />
       </div>
 
@@ -561,7 +553,7 @@ export default function AdminModal() {
       '연세대학교', '서울시여성단체협의회', '주식회사 예림'
     ].map((name, index) => ({
       name,
-      logoUrl: `https://via.placeholder.com/200x100?text=${encodeURIComponent(name)}`,
+      logoUrl: '',
       order: index,
       isFeatured: true
     }));
@@ -629,7 +621,7 @@ export default function AdminModal() {
   const addPartner = async () => {
     const newPartner = {
       name: '새 협력사',
-      logoUrl: 'https://via.placeholder.com/200x100?text=Logo',
+      logoUrl: '',
       order: partners.length,
       isFeatured: true
     };

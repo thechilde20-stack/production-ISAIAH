@@ -12,7 +12,7 @@ const INITIAL_PARTNERS: Partner[] = [
 ].map((name, index) => ({
   id: `initial-${index}`,
   name,
-  logoUrl: `https://via.placeholder.com/200x100?text=${encodeURIComponent(name)}`,
+  logoUrl: '',
   order: index,
   isFeatured: true
 }));
@@ -63,12 +63,18 @@ export default function PartnersSection() {
                   className="flex flex-col items-center justify-center p-3 transition-all duration-500 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 w-40 md:w-52 flex-shrink-0 group/partner"
                 >
                   <div className="h-12 md:h-16 flex items-center justify-center">
-                    <img
-                      src={partner.logoUrl}
-                      alt={partner.name}
-                      className="max-w-full max-h-full object-contain brightness-0 invert opacity-50 group-hover/partner:brightness-100 group-hover/partner:invert-0 group-hover/partner:opacity-100 transition-all duration-500"
-                      referrerPolicy="no-referrer"
-                    />
+                    {partner.logoUrl ? (
+                      <img
+                        src={partner.logoUrl}
+                        alt={partner.name}
+                        className="max-w-full max-h-full object-contain brightness-0 invert opacity-50 group-hover/partner:brightness-100 group-hover/partner:invert-0 group-hover/partner:opacity-100 transition-all duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="text-white/20 text-xs font-bold group-hover/partner:text-amber-500 transition-colors">
+                        {partner.name}
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               ))}
