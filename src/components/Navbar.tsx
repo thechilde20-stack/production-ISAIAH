@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Cloud } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import logo from '../assets/logo.png';
 
 const navItems = [
   { name: 'ABOUT', href: '#about' },
@@ -36,7 +35,7 @@ export default function Navbar() {
         <a href="/" className="flex items-center">
           {!logoError ? (
             <img 
-              src={logo} 
+              src="logo.png" 
               alt="PRODUCTION ISAIAH" 
               className="h-8 md:h-10 w-auto object-contain"
               onError={() => setLogoError(true)}
