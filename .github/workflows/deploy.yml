@@ -1,0 +1,37 @@
+name: Deploy to ASUSTOR NAS
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 코드가 올라올 때마다 실행
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to NAS via SSH
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          username: ${{ secrets.NAS_USERNAME }}
+          password: ${{ secrets.NAS_PASSWORD }}
+          port: ${{ secrets.NAS_PORT }}
+          source: "dist/*"
+          target: "/volume1/Web/isaiah"
+          strip_components: 1 # dist 폴더 자체는 빼고 내용물만 전송
+          overwrite: true
