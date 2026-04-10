@@ -1,4 +1,4 @@
-import logo from '@/src/assets/logo.png';
+import logo from '../assets/logo.png';
 
 export default function Footer() {
   return (
@@ -10,19 +10,15 @@ export default function Footer() {
               src={logo} 
               alt="PRODUCTION ISAIAH" 
               className="h-6 md:h-8 w-auto object-contain"
-              referrerPolicy="no-referrer"
               onError={(e) => {
-                console.error("Footer logo failed to load.");
                 e.currentTarget.style.display = 'none';
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  parent.insertAdjacentHTML('afterbegin', `
-                    <span class="text-white font-bold tracking-tighter text-xl">
-                      PRODUCTION <span class="text-amber-500">ISAIAH</span>
-                    </span>
-                  `);
-                }
+                e.currentTarget.parentElement!.insertAdjacentHTML('afterbegin', `
+                  <span class="text-white font-bold tracking-tighter text-xl">
+                    PRODUCTION <span class="text-amber-500">ISAIAH</span>
+                  </span>
+                `);
               }}
+              referrerPolicy="no-referrer"
             />
             <p className="text-xs">© 2015 Isaiah. All Rights Reserved.</p>
           </div>

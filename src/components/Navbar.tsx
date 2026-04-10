@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Cloud } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import logo from '@/src/assets/logo.png';
+import logo from '../assets/logo.png';
 
 const navItems = [
   { name: 'ABOUT', href: '#about' },
@@ -37,21 +37,17 @@ export default function Navbar() {
             src={logo} 
             alt="PRODUCTION ISAIAH" 
             className="h-8 md:h-10 w-auto object-contain"
-            referrerPolicy="no-referrer"
             onError={(e) => {
-              console.error("Navbar logo failed to load.");
               // Fallback to text if image fails to load
               e.currentTarget.style.display = 'none';
-              const parent = e.currentTarget.parentElement;
-              if (parent) {
-                parent.innerHTML = `
-                  <div class="flex items-baseline">
-                    <span class="text-amber-500 font-extralight tracking-[0.2em] text-xl md:text-2xl uppercase">Production</span>
-                    <span class="text-amber-500 font-black tracking-tighter text-2xl md:text-3xl uppercase ml-2">Isaiah</span>
-                  </div>
-                `;
-              }
+              e.currentTarget.parentElement!.innerHTML = `
+                <div class="flex items-baseline">
+                  <span class="text-amber-500 font-extralight tracking-[0.2em] text-xl md:text-2xl uppercase">Production</span>
+                  <span class="text-amber-500 font-black tracking-tighter text-2xl md:text-3xl uppercase ml-2">Isaiah</span>
+                </div>
+              `;
             }}
+            referrerPolicy="no-referrer"
           />
         </a>
 

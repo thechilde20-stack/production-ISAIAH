@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/src/firebase';
 import { PortfolioItem } from '@/src/types';
 
@@ -62,25 +62,28 @@ export default function PortfolioSection() {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   useEffect(() => {
-    const path = 'portfolio';
-    const q = query(collection(db, path), orderBy('order', 'asc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as PortfolioItem));
-        setPortfolio(items);
-      } else {
-        // Fallback to mock data if collection is empty
-        setPortfolio(MOCK_PORTFOLIO);
+    const fetchPortfolio = async () => {
+      const path = 'portfolio';
+      try {
+        const q = query(collection(db, path), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as PortfolioItem));
+          setPortfolio(items);
+        } else {
+          // Fallback to mock data if collection is empty
+          setPortfolio(MOCK_PORTFOLIO);
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, path);
       }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, path);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchPortfolio();
   }, []);
 
   const isExpanded = visibleCount >= portfolio.length;

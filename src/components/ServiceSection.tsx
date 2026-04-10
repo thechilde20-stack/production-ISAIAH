@@ -30,7 +30,7 @@ const services = [
   },
   {
     icon: Megaphone,
-    title: '캠페인 / 인터뷰 영상',
+    title: '캠페인 미디어 콘텐츠',
     desc: '메시지는 넓게, 이야기는 깊게. 사회적 울림과 개인의 진솔함을 함께 담습니다.',
   },
 ];

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Partner } from '../types';
 import { db, handleFirestoreError, OperationType } from '@/src/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 const INITIAL_PARTNERS: Partner[] = [
   '국세청', '통일부', '한국교회총연합', '서초구청', '동대문구청', 
@@ -12,7 +12,7 @@ const INITIAL_PARTNERS: Partner[] = [
 ].map((name, index) => ({
   id: `initial-${index}`,
   name,
-  logoUrl: `https://picsum.photos/seed/${encodeURIComponent(name)}/200/100`,
+  logoUrl: `https://via.placeholder.com/200x100?text=${encodeURIComponent(name)}`,
   order: index,
   isFeatured: true
 }));
@@ -21,24 +21,27 @@ export default function PartnersSection() {
   const [partners, setPartners] = useState<Partner[]>([]);
 
   useEffect(() => {
-    const path = 'partners';
-    const q = query(collection(db, path), orderBy('order', 'asc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const items = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Partner));
-        setPartners(items);
-      } else {
-        setPartners(INITIAL_PARTNERS);
+    const fetchPartners = async () => {
+      const path = 'partners';
+      try {
+        const q = query(collection(db, path), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Partner));
+          setPartners(items);
+        } else {
+          setPartners(INITIAL_PARTNERS);
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, path);
       }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, path);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchPartners();
   }, []);
 
   const sortedPartners = partners.length > 0 ? partners : INITIAL_PARTNERS;

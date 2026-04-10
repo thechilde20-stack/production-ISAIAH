@@ -488,7 +488,7 @@ export default function AdminModal() {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || !isOpen) return;
 
     // Listen to Partners
     const partnersQuery = query(collection(db, 'partners'), orderBy('order', 'asc'));
@@ -524,7 +524,7 @@ export default function AdminModal() {
       unsubscribeMessages();
       unsubscribeSettings();
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isOpen]);
 
   const initializeData = async () => {
     setIsInitializing(true);
@@ -561,7 +561,7 @@ export default function AdminModal() {
       '연세대학교', '서울시여성단체협의회', '주식회사 예림'
     ].map((name, index) => ({
       name,
-      logoUrl: `https://picsum.photos/seed/${encodeURIComponent(name)}/200/100`,
+      logoUrl: `https://via.placeholder.com/200x100?text=${encodeURIComponent(name)}`,
       order: index,
       isFeatured: true
     }));
@@ -629,7 +629,7 @@ export default function AdminModal() {
   const addPartner = async () => {
     const newPartner = {
       name: '새 협력사',
-      logoUrl: 'https://picsum.photos/seed/partner/200/100',
+      logoUrl: 'https://via.placeholder.com/200x100?text=Logo',
       order: partners.length,
       isFeatured: true
     };
