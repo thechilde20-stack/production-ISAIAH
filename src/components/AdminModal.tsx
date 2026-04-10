@@ -553,7 +553,7 @@ export default function AdminModal() {
       '연세대학교', '서울시여성단체협의회', '주식회사 예림'
     ].map((name, index) => ({
       name,
-      logoUrl: '',
+      logoUrl: `https://placehold.co/200x100/000000/FFFFFF/png?text=${encodeURIComponent(name)}`,
       order: index,
       isFeatured: true
     }));
@@ -621,7 +621,7 @@ export default function AdminModal() {
   const addPartner = async () => {
     const newPartner = {
       name: '새 협력사',
-      logoUrl: '',
+      logoUrl: 'https://placehold.co/200x100/000000/FFFFFF/png?text=Logo',
       order: partners.length,
       isFeatured: true
     };

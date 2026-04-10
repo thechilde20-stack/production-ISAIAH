@@ -1,25 +1,26 @@
+import { useState } from 'react';
 import logo from '../assets/logo.png';
 
 export default function Footer() {
+  const [logoError, setLogoError] = useState(false);
   return (
     <footer className="bg-black text-white/40 py-12 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           <div className="flex flex-col items-center md:items-start space-y-2">
-            <img 
-              src={logo} 
-              alt="PRODUCTION ISAIAH" 
-              className="h-6 md:h-8 w-auto object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.insertAdjacentHTML('afterbegin', `
-                  <span class="text-white font-bold tracking-tighter text-xl">
-                    PRODUCTION <span class="text-amber-500">ISAIAH</span>
-                  </span>
-                `);
-              }}
-              referrerPolicy="no-referrer"
-            />
+            {!logoError ? (
+              <img 
+                src={logo} 
+                alt="PRODUCTION ISAIAH" 
+                className="h-6 md:h-8 w-auto object-contain"
+                onError={() => setLogoError(true)}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="text-white font-bold tracking-tighter text-xl">
+                PRODUCTION <span className="text-amber-500">ISAIAH</span>
+              </span>
+            )}
             <p className="text-xs">© 2015 Isaiah. All Rights Reserved.</p>
           </div>
 

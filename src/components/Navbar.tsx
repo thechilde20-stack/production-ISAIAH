@@ -15,6 +15,7 @@ const navItems = [
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,22 +34,20 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <a href="/" className="flex items-center">
-          <img 
-            src={logo} 
-            alt="PRODUCTION ISAIAH" 
-            className="h-8 md:h-10 w-auto object-contain"
-            onError={(e) => {
-              // Fallback to text if image fails to load
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = `
-                <div class="flex items-baseline">
-                  <span class="text-amber-500 font-extralight tracking-[0.2em] text-xl md:text-2xl uppercase">Production</span>
-                  <span class="text-amber-500 font-black tracking-tighter text-2xl md:text-3xl uppercase ml-2">Isaiah</span>
-                </div>
-              `;
-            }}
-            referrerPolicy="no-referrer"
-          />
+          {!logoError ? (
+            <img 
+              src={logo} 
+              alt="PRODUCTION ISAIAH" 
+              className="h-8 md:h-10 w-auto object-contain"
+              onError={() => setLogoError(true)}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex items-baseline">
+              <span className="text-amber-500 font-extralight tracking-[0.2em] text-xl md:text-2xl uppercase">Production</span>
+              <span className="text-amber-500 font-black tracking-tighter text-2xl md:text-3xl uppercase ml-2">Isaiah</span>
+            </div>
+          )}
         </a>
 
         {/* Desktop Menu */}

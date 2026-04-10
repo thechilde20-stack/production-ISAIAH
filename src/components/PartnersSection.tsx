@@ -12,7 +12,7 @@ const INITIAL_PARTNERS: Partner[] = [
 ].map((name, index) => ({
   id: `initial-${index}`,
   name,
-  logoUrl: '',
+  logoUrl: `https://placehold.co/200x100/000000/FFFFFF/png?text=${encodeURIComponent(name)}`,
   order: index,
   isFeatured: true
 }));
