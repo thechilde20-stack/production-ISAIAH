@@ -3,7 +3,7 @@ name: Deploy to ASUSTOR NAS
 on:
   push:
     branches:
-      - main  # main 브랜치에 코드가 올라올 때마다 실행
+      - main
 
 jobs:
   build-and-deploy:
@@ -14,12 +14,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
+        # 최신 Tailwind는 Node 20 버전 이상에서 가장 잘 돌아갑니다.
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-package-lock
+        # --force를 붙여서 깨진 부품(Native binding)을 강제로 다시 설치하게 합니다.
+        run: |
+          npm install --force
+          npm install @tailwindcss/oxide-linux-x64-gnu
 
       - name: Build project
         run: npm run build
@@ -33,5 +37,5 @@ jobs:
           port: ${{ secrets.NAS_PORT }}
           source: "dist/*"
           target: "/volume1/Web/isaiah"
-          strip_components: 1 # dist 폴더 자체는 빼고 내용물만 전송
+          strip_components: 1
           overwrite: true
