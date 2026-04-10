@@ -54,12 +54,14 @@ ${message}
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    console.log("Starting in DEVELOPMENT mode...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("Starting in PRODUCTION mode...");
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
