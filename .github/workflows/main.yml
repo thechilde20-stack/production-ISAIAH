@@ -1,0 +1,36 @@
+name: Deploy to NAS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to NAS via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          username: ${{ secrets.NAS_USERNAME }}
+          password: ${{ secrets.NAS_PASSWORD }}
+          port: ${{ secrets.NAS_PORT }}
+          source: "dist/*"
+          target: "/Web/isaiah"
+          strip_components: 1
