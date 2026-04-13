@@ -8,9 +8,14 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
+
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
 
   // API Route for sending emails
   app.post("/api/send-email", async (req, res) => {
@@ -54,14 +59,12 @@ ${message}
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    console.log("Starting in DEVELOPMENT mode...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    console.log("Starting in PRODUCTION mode...");
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {

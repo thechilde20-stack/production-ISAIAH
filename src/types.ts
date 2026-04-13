@@ -37,6 +37,7 @@ export interface SiteSettings {
   // SEO
   siteTitle: string;
   metaDescription: string;
+  ogDescription: string;
   keywords: string;
   ogImage: string;
   favicon: string;

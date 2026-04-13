@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logo from '../assets/logo.png';
 
 export default function Footer() {
   const [logoError, setLogoError] = useState(false);
@@ -9,7 +10,7 @@ export default function Footer() {
           <div className="flex flex-col items-center md:items-start space-y-2">
             {!logoError ? (
               <img 
-                src="logo.png" 
+                src={logo} 
                 alt="PRODUCTION ISAIAH" 
                 className="h-6 md:h-8 w-auto object-contain"
                 onError={() => setLogoError(true)}

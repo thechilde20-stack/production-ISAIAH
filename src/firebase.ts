@@ -2,28 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-
-// Use environment variables with VITE_ prefix for client-side access
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID,
-};
-
-// Fallback for AI Studio environment if variables are not set
-if (!firebaseConfig.apiKey) {
-  try {
-    // @ts-ignore - dynamic import for local config
-    const localConfig = await import('../firebase-applet-config.json');
-    Object.assign(firebaseConfig, localConfig.default || localConfig);
-  } catch (e) {
-    console.warn('Firebase configuration missing. Please set VITE_FIREBASE_* environment variables.');
-  }
-}
+import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);

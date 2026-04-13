@@ -443,9 +443,10 @@ export default function AdminModal() {
     heroDescription: '공공기관·브랜드·다큐멘터리·교육 콘텐츠를\n기획부터 완성까지, 신뢰할 수 있는 파트너 프로덕션 이사야입니다.',
     siteTitle: 'PRODUCTION ISAIAH',
     metaDescription: '브랜드의 가치를 영상으로 담아내는 프로덕션 이사야입니다.',
+    ogDescription: '의미 있는 영상으로 세상을 밝히는 미디어 프로덕션, 이사야입니다.',
     keywords: '영상제작, 프로덕션, 광고제작, 홍보영상',
-    ogImage: '',
-    favicon: '',
+    ogImage: '/og-image.png',
+    favicon: '/favicon.png',
     accentColor: '#f59e0b',
     primaryFont: 'NanumSquareNeo'
   });
@@ -470,7 +471,8 @@ export default function AdminModal() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user && user.email === 'thechilde77@gmail.com') {
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'thechilde77@gmail.com';
+      if (user && user.email === adminEmail) {
         setIsLoggedIn(true);
       } else {
         setIsLoggedIn(false);
@@ -590,7 +592,8 @@ export default function AdminModal() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === '5882') {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || '5882';
+    if (password === adminPassword) {
       try {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
@@ -1065,6 +1068,15 @@ export default function AdminModal() {
                         />
                       </div>
                       <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">OpenGraph Description</label>
+                        <textarea
+                          value={settings.ogDescription}
+                          onChange={(e) => updateSettings({ ogDescription: e.target.value })}
+                          rows={2}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">대표 키워드 (쉼표로 구분)</label>
                         <input
                           type="text"
@@ -1093,8 +1105,13 @@ export default function AdminModal() {
                                   onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
+                                      if (file.size > 800 * 1024) {
+                                        alert('이미지 용량이 너무 큽니다 (800KB 이하 권장)');
+                                        return;
+                                      }
                                       const reader = new FileReader();
                                       reader.onload = () => updateSettings({ ogImage: reader.result as string });
+                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
                                       reader.readAsDataURL(file);
                                     }
                                   }} 
@@ -1106,9 +1123,9 @@ export default function AdminModal() {
                         <div className="space-y-2">
                           <label className="text-xs text-white/40 font-bold uppercase">Favicon</label>
                           <div className="relative group/favicon">
-                            <div className="w-full aspect-square bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
+                            <div className="w-24 h-24 bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
                               {settings.favicon ? (
-                                <img src={settings.favicon} alt="Favicon" className="w-12 h-12 object-contain" />
+                                <img src={settings.favicon} alt="Favicon" className="w-16 h-16 object-contain" />
                               ) : (
                                 <ImageIcon className="w-8 h-8 text-white/10" />
                               )}
@@ -1122,8 +1139,13 @@ export default function AdminModal() {
                                   onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
+                                      if (file.size > 200 * 1024) {
+                                        alert('파비콘 용량이 너무 큽니다 (200KB 이하 권장)');
+                                        return;
+                                      }
                                       const reader = new FileReader();
                                       reader.onload = () => updateSettings({ favicon: reader.result as string });
+                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
                                       reader.readAsDataURL(file);
                                     }
                                   }} 

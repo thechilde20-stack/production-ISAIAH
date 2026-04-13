@@ -31,6 +31,7 @@ export default function App() {
           
           // Update Meta Tags
           const updateMeta = (name: string, content: string, isProperty = false) => {
+            if (!content) return;
             let el = document.querySelector(isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`);
             if (!el) {
               el = document.createElement('meta');
@@ -44,18 +45,22 @@ export default function App() {
           updateMeta('description', data.metaDescription);
           updateMeta('keywords', data.keywords);
           updateMeta('og:title', data.siteTitle, true);
-          updateMeta('og:description', data.metaDescription, true);
+          updateMeta('og:description', data.ogDescription, true);
           updateMeta('og:image', data.ogImage, true);
 
           // Update Favicon
           if (data.favicon) {
-            let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-            if (!link) {
-              link = document.createElement('link');
+            let links: NodeListOf<HTMLLinkElement> = document.querySelectorAll("link[rel*='icon']");
+            if (links.length === 0) {
+              const link = document.createElement('link');
               link.rel = 'icon';
+              link.href = data.favicon;
               document.head.appendChild(link);
+            } else {
+              links.forEach(link => {
+                link.href = data.favicon;
+              });
             }
-            link.href = data.favicon;
           }
 
           // Apply Global CSS Variables
