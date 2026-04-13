@@ -32,5 +32,5 @@ jobs:
           password: ${{ secrets.NAS_PASSWORD }}
           port: ${{ secrets.NAS_PORT }}
           source: "dist/*"
-          target: "/Web/isaiah"
+          target: "/volume1/Web/isaiah"
           strip_components: 1
