@@ -426,7 +426,7 @@ function ContactRow({
 export default function AdminModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initStatus, setInitStatus] = useState<'idle' | 'confirming' | 'loading' | 'success' | 'error'>('idle');
@@ -441,7 +441,7 @@ export default function AdminModal() {
     heroHeadline: '사람의 마음을 움직이고,\n브랜드 메세지는 선명하게!',
     heroSubcopy: '프로덕션 이사야',
     heroDescription: '공공기관·브랜드·다큐멘터리·교육 콘텐츠를\n기획부터 완성까지, 신뢰할 수 있는 파트너 프로덕션 이사야입니다.',
-    siteTitle: 'PRODUCTION ISAIAH',
+    siteTitle: '프로덕션 이사야 | PRODUCTION ISAIAH',
     metaDescription: '브랜드의 가치를 영상으로 담아내는 프로덕션 이사야입니다.',
     ogDescription: '의미 있는 영상으로 세상을 밝히는 미디어 프로덕션, 이사야입니다.',
     keywords: '영상제작, 프로덕션, 광고제작, 홍보영상',
@@ -474,6 +474,10 @@ export default function AdminModal() {
       const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'thechilde77@gmail.com';
       if (user && user.email === adminEmail) {
         setIsLoggedIn(true);
+        setError(null);
+      } else if (user) {
+        setIsLoggedIn(false);
+        setError(`'${user.email}' 계정은 관리자 권한이 없습니다.`);
       } else {
         setIsLoggedIn(false);
       }
@@ -592,25 +596,29 @@ export default function AdminModal() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || '5882';
-    if (password === adminPassword) {
-      try {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        setError(false);
-      } catch (err: any) {
-        console.error('Login failed:', err);
-        // 구글 로그인 실패 시 에러 메시지 세분화
-        if (err.code === 'auth/unauthorized-domain') {
-          alert('현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다.\nFirebase 콘솔에서 도메인을 추가해주세요.');
-        } else {
-          alert('구글 로그인 중 오류가 발생했습니다: ' + err.message);
-        }
-        setError(true);
-      }
-    } else {
-      setError(true);
+    const adminPassword = (import.meta.env.VITE_ADMIN_PASSWORD || '5882').trim();
+    const enteredPassword = password.trim();
+    
+    if (enteredPassword !== adminPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
       setPassword('');
+      return;
+    }
+
+    try {
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      // AI Studio iframe 환경에서는 팝업이 차단될 수 있으므로 에러 핸들링 강화
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('현재 도메인이 Firebase 승인된 도메인에 등록되지 않았습니다. Firebase 콘솔에서 현재 URL을 추가해주세요.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용하거나 주소창의 팝업 차단 해제를 클릭해주세요.');
+      } else {
+        setError('로그인 중 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
+      }
     }
   };
 
@@ -790,7 +798,14 @@ export default function AdminModal() {
                   autoFocus
                 />
                 {error && (
-                  <p className="text-red-500 text-xs mt-2 ml-2">비밀번호가 틀렸거나 권한이 없습니다.</p>
+                  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                    <p className="text-red-500 text-xs leading-relaxed">{error}</p>
+                    {error.includes('도메인') && (
+                      <p className="text-white/40 text-[10px] mt-2 break-all">
+                        추가할 도메인: {window.location.hostname}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
               <button
