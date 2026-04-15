@@ -54,7 +54,7 @@ export default function Hero({ settings }: HeroProps) {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="space-y-6"
         >
-          <h4 className="text-[var(--accent-color)] font-primary font-bold text-lg md:text-xl">
+          <h4 className="text-[var(--accent-color)] font-primary font-bold text-xl md:text-2xl">
             {settings?.heroSubcopy || '프로덕션 이사야'}
           </h4>
           <h1 className="text-4xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-300 leading-tight tracking-tighter whitespace-pre-line">
