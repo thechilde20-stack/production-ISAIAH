@@ -20,8 +20,8 @@
    EMAIL_PASS=your-app-password
 
    # 관리자 인증 설정 (기본값 사용 가능)
-   VITE_ADMIN_EMAIL=thechilde77@gmail.com
-   VITE_ADMIN_PASSWORD=5882
+   VITE_ADMIN_EMAIL=your-gmail@gmail.com
+   VITE_ADMIN_PASSWORD=your-app-password
 
    # 서버 포트 (기본값 3000)
    PORT=3000
