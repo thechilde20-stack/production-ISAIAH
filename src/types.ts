@@ -1,7 +1,8 @@
 export interface PortfolioItem {
   id: string;
   title: string;
-  category: string;
+  categories: string[];
+  category?: string; // Legacy field for migration
   thumbnail: string;
   videoUrl: string; // YouTube ID or URL
   info?: string;

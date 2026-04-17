@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2 } from 'lucide-react';
+import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch, setDoc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Helper to extract YouTube ID
 const extractYoutubeId = (url: string) => {
@@ -16,9 +33,9 @@ const extractYoutubeId = (url: string) => {
 };
 
 const MAIN_CATEGORIES = [
+  { value: 'DIGITAL_AI', label: 'DIGITAL & AI', subItems: 'AI Solution / New Media / SNS / Tech' },
   { value: 'COMMERCIAL', label: 'COMMERCIAL', subItems: 'CF / Brand Film / Campaign / Promo' },
   { value: 'DOCUMENTARY_FILM', label: 'DOCUMENTARY & FILM', subItems: 'Documentary / Shorts / Interview / Film' },
-  { value: 'DIGITAL_AI', label: 'DIGITAL & AI', subItems: 'AI Solution / New Media / SNS / Tech' },
   { value: 'EDUCATION', label: 'EDUCATION', subItems: 'Educational / Lecture / Info / Tutorial' },
 ];
 
@@ -28,14 +45,29 @@ function PortfolioItemRow({
   total, 
   onUpdate, 
   onDelete, 
-  onMove, 
   deleteConfirm, 
   setDeleteConfirm 
 }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    position: 'relative' as const,
+  };
+
   const [localTitle, setLocalTitle] = useState(item.title);
   const [localVideoUrl, setLocalVideoUrl] = useState(item.videoUrl);
   const [localInfo, setLocalInfo] = useState(item.info || '');
-  const [localCategory, setLocalCategory] = useState(item.category);
+  const [localCategories, setLocalCategories] = useState<string[]>(item.categories || (item.category ? [item.category] : []));
   const [localThumbnail, setLocalThumbnail] = useState(item.thumbnail || '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -43,7 +75,9 @@ function PortfolioItemRow({
   useEffect(() => { setLocalTitle(item.title); }, [item.title]);
   useEffect(() => { setLocalVideoUrl(item.videoUrl); }, [item.videoUrl]);
   useEffect(() => { setLocalInfo(item.info || ''); }, [item.info]);
-  useEffect(() => { setLocalCategory(item.category); }, [item.category]);
+  useEffect(() => { 
+    setLocalCategories(item.categories || (item.category ? [item.category] : [])); 
+  }, [item.categories, item.category]);
   useEffect(() => { setLocalThumbnail(item.thumbnail || ''); }, [item.thumbnail]);
 
   const handleBlur = (field: string, value: string) => {
@@ -103,22 +137,20 @@ function PortfolioItemRow({
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group">
-      <div className="flex flex-col space-y-1">
-        <button 
-          onClick={() => onMove(index, 'up')}
-          disabled={index === 0}
-          className="text-white/20 hover:text-amber-500 disabled:opacity-0 transition-colors"
-        >
-          <ArrowUp className="w-4 h-4" />
-        </button>
-        <button 
-          onClick={() => onMove(index, 'down')}
-          disabled={index === total - 1}
-          className="text-white/20 hover:text-amber-500 disabled:opacity-0 transition-colors"
-        >
-          <ArrowDown className="w-4 h-4" />
-        </button>
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group transition-colors",
+        isDragging && "bg-amber-500/5 border-amber-500/30 ring-2 ring-amber-500/20"
+      )}
+    >
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="cursor-grab active:cursor-grabbing text-white/20 hover:text-white transition-colors p-2 -ml-2"
+      >
+        <GripVertical className="w-5 h-5" />
       </div>
 
       <div className="relative w-32 aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-white/5 group/thumb">
@@ -175,18 +207,22 @@ function PortfolioItemRow({
           className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2"
         />
         <div className="col-span-2 space-y-2">
+          <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (중복 가능)</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {MAIN_CATEGORIES.map((cat) => (
               <div key={cat.value} className="relative group/cat">
                 <button
                   type="button"
                   onClick={() => {
-                    setLocalCategory(cat.value);
-                    onUpdate(item.id, { category: cat.value });
+                    const newCategories = localCategories.includes(cat.value)
+                      ? localCategories.filter(c => c !== cat.value)
+                      : [...localCategories, cat.value];
+                    setLocalCategories(newCategories);
+                    onUpdate(item.id, { categories: newCategories });
                   }}
                   className={cn(
                     "w-full py-2 px-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all border whitespace-nowrap overflow-hidden text-ellipsis",
-                    localCategory === cat.value 
+                    localCategories.includes(cat.value) 
                       ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
                       : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
                   )}
@@ -241,10 +277,25 @@ function PartnerRow({
   total, 
   onUpdate, 
   onDelete, 
-  onMove, 
   deleteConfirm, 
   setDeleteConfirm 
 }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: partner.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    position: 'relative' as const,
+  };
+
   const [localName, setLocalName] = useState(partner.name);
   const [localLogoUrl, setLocalLogoUrl] = useState(partner.logoUrl);
   const [isUploading, setIsUploading] = useState(false);
@@ -302,22 +353,20 @@ function PartnerRow({
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group">
-      <div className="flex flex-col space-y-1">
-        <button 
-          onClick={() => onMove(index, 'up')}
-          disabled={index === 0}
-          className="text-white/20 hover:text-amber-500 disabled:opacity-0 transition-colors"
-        >
-          <ArrowUp className="w-4 h-4" />
-        </button>
-        <button 
-          onClick={() => onMove(index, 'down')}
-          disabled={index === total - 1}
-          className="text-white/20 hover:text-amber-500 disabled:opacity-0 transition-colors"
-        >
-          <ArrowDown className="w-4 h-4" />
-        </button>
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group transition-colors",
+        isDragging && "bg-amber-500/5 border-amber-500/30 ring-2 ring-amber-500/20"
+      )}
+    >
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="cursor-grab active:cursor-grabbing text-white/20 hover:text-white transition-colors p-2 -ml-2"
+      >
+        <GripVertical className="w-5 h-5" />
       </div>
 
       <div className="relative w-24 h-12 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-white/5 group/logo">
@@ -688,31 +737,13 @@ export default function AdminModal() {
     }
   };
 
-  const movePartner = async (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= partners.length) return;
-
-    const batch = writeBatch(db);
-    const item1 = partners[index];
-    const item2 = partners[targetIndex];
-
-    batch.update(doc(db, 'partners', item1.id), { order: targetIndex });
-    batch.update(doc(db, 'partners', item2.id), { order: index });
-
-    try {
-      await batch.commit();
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'partners/batch');
-    }
-  };
-
   // Portfolio Actions
   const addPortfolio = async () => {
     // Find min order to put at top
     const minOrder = portfolio.length > 0 ? Math.min(...portfolio.map(p => p.order)) : 0;
     const newItem = {
       title: '새 포트폴리오',
-      category: 'COMMERCIAL',
+      categories: ['COMMERCIAL'],
       thumbnail: '',
       videoUrl: 'placeholder',
       info: '상세 정보를 입력하세요',
@@ -760,21 +791,65 @@ export default function AdminModal() {
     }
   };
 
-  const movePortfolio = async (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= portfolio.length) return;
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
+  const handleDragEndPortfolio = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = portfolio.findIndex((item) => item.id === active.id);
+    const newIndex = portfolio.findIndex((item) => item.id === over.id);
+
+    const newPortfolio = arrayMove(portfolio, oldIndex, newIndex);
+    
+    // Optimistic update
+    setPortfolio(newPortfolio);
+
+    // Update orders in Firestore
     const batch = writeBatch(db);
-    const item1 = portfolio[index];
-    const item2 = portfolio[targetIndex];
-
-    batch.update(doc(db, 'portfolio', item1.id), { order: targetIndex });
-    batch.update(doc(db, 'portfolio', item2.id), { order: index });
+    newPortfolio.forEach((item, idx) => {
+      // Re-assign order based on array position
+      if (item.order !== idx) {
+        batch.update(doc(db, 'portfolio', item.id), { order: idx });
+      }
+    });
 
     try {
       await batch.commit();
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'portfolio/batch');
+      handleFirestoreError(err, OperationType.UPDATE, 'portfolio/reorder');
+    }
+  };
+
+  const handleDragEndPartners = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = partners.findIndex((item) => item.id === active.id);
+    const newIndex = partners.findIndex((item) => item.id === over.id);
+
+    const newPartners = arrayMove(partners, oldIndex, newIndex);
+    
+    // Optimistic update
+    setPartners(newPartners);
+
+    // Update orders in Firestore
+    const batch = writeBatch(db);
+    newPartners.forEach((item, idx) => {
+      if (item.order !== idx) {
+        batch.update(doc(db, 'partners', item.id), { order: idx });
+      }
+    });
+
+    try {
+      await batch.commit();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'partners/reorder');
     }
   };
 
@@ -973,19 +1048,29 @@ export default function AdminModal() {
                   </div>
 
                   <div className="grid gap-4">
-                    {portfolio.map((item, index) => (
-                      <PortfolioItemRow
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        total={portfolio.length}
-                        onUpdate={updatePortfolio}
-                        onDelete={deletePortfolio}
-                        onMove={movePortfolio}
-                        deleteConfirm={deleteConfirm}
-                        setDeleteConfirm={setDeleteConfirm}
-                      />
-                    ))}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEndPortfolio}
+                    >
+                      <SortableContext
+                        items={portfolio.map(i => i.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {portfolio.map((item, index) => (
+                          <PortfolioItemRow
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            total={portfolio.length}
+                            onUpdate={updatePortfolio}
+                            onDelete={deletePortfolio}
+                            deleteConfirm={deleteConfirm}
+                            setDeleteConfirm={setDeleteConfirm}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 </div>
               ) : activeTab === 'partners' ? (
@@ -1005,19 +1090,29 @@ export default function AdminModal() {
                   </div>
 
                   <div className="grid gap-4">
-                    {partners.map((partner, index) => (
-                      <PartnerRow
-                        key={partner.id}
-                        partner={partner}
-                        index={index}
-                        total={partners.length}
-                        onUpdate={updatePartner}
-                        onDelete={deletePartner}
-                        onMove={movePartner}
-                        deleteConfirm={deleteConfirm}
-                        setDeleteConfirm={setDeleteConfirm}
-                      />
-                    ))}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEndPartners}
+                    >
+                      <SortableContext
+                        items={partners.map(i => i.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {partners.map((partner, index) => (
+                          <PartnerRow
+                            key={partner.id}
+                            partner={partner}
+                            index={index}
+                            total={partners.length}
+                            onUpdate={updatePartner}
+                            onDelete={deletePartner}
+                            deleteConfirm={deleteConfirm}
+                            setDeleteConfirm={setDeleteConfirm}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 </div>
               ) : activeTab === 'messages' ? (

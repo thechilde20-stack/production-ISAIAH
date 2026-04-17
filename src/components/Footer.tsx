@@ -25,7 +25,7 @@ export default function Footer() {
 
           <div className="flex space-x-8 text-xs tracking-widest uppercase">
             <a href="#about" className="hover:text-amber-500 transition-colors">About</a>
-            <a href="#work" className="hover:text-amber-500 transition-colors">Work</a>
+            <a href="#work" className="hover:text-amber-500 transition-colors">Works</a>
             <a href="#contact" className="hover:text-amber-500 transition-colors">Contact</a>
             <button 
               onClick={() => window.dispatchEvent(new CustomEvent('open-admin'))}
