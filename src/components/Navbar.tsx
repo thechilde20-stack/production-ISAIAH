@@ -42,10 +42,9 @@ export default function Navbar() {
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="flex items-baseline">
-              <span className="text-amber-500 font-extralight tracking-[0.2em] text-xl md:text-2xl uppercase">Production</span>
-              <span className="text-amber-500 font-black tracking-tighter text-2xl md:text-3xl uppercase ml-2">Isaiah</span>
-            </div>
+            <span className="text-white font-bold tracking-tighter text-xl md:text-2xl">
+              PRODUCTION <span className="text-amber-500">ISAIAH</span>
+            </span>
           )}
         </a>
 

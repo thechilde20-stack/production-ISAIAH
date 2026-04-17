@@ -15,6 +15,13 @@ const extractYoutubeId = (url: string) => {
   return (match && match[7].length === 11) ? match[7] : url;
 };
 
+const MAIN_CATEGORIES = [
+  { value: 'COMMERCIAL', label: 'COMMERCIAL', subItems: 'CF / Brand Film / Campaign / Promo' },
+  { value: 'DOCUMENTARY_FILM', label: 'DOCUMENTARY & FILM', subItems: 'Documentary / Shorts / Interview / Film' },
+  { value: 'DIGITAL_AI', label: 'DIGITAL & AI', subItems: 'AI Solution / New Media / SNS / Tech' },
+  { value: 'EDUCATION', label: 'EDUCATION', subItems: 'Educational / Lecture / Info / Tutorial' },
+];
+
 function PortfolioItemRow({ 
   item, 
   index, 
@@ -167,14 +174,35 @@ function PortfolioItemRow({
           placeholder="상세 정보 (클라이언트, 설명 등)"
           className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2"
         />
-        <input
-          type="text"
-          value={localCategory}
-          onChange={(e) => setLocalCategory(e.target.value)}
-          onBlur={(e) => handleBlur('category', e.target.value)}
-          placeholder="카테고리"
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2"
-        />
+        <div className="col-span-2 space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {MAIN_CATEGORIES.map((cat) => (
+              <div key={cat.value} className="relative group/cat">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalCategory(cat.value);
+                    onUpdate(item.id, { category: cat.value });
+                  }}
+                  className={cn(
+                    "w-full py-2 px-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all border whitespace-nowrap overflow-hidden text-ellipsis",
+                    localCategory === cat.value 
+                      ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                      : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
+                  )}
+                >
+                  {cat.label}
+                </button>
+                {/* Hover Details Popover */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 p-2 bg-[#1a1a1a] border border-white/10 rounded-xl opacity-0 pointer-events-none group-hover/cat:opacity-100 transition-all duration-300 z-30 text-center shadow-2xl scale-95 group-hover/cat:scale-100">
+                  <p className="text-[10px] text-amber-500 font-bold mb-1">{cat.label}</p>
+                  <p className="text-[9px] text-white/60 leading-tight">{cat.subItems}</p>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#1a1a1a]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -532,23 +560,23 @@ export default function AdminModal() {
 
     // Default Portfolio
     const defaultPortfolio = [
-      { youtubeId: 'iM8_tSZ_K_I', title: '뮤지컬 루쓰! 배우 선예, 이지훈, 김다현', info: '유튜브 토크쇼 (별다방토크)', category: '유튜브 토크쇼' },
-      { youtubeId: 'ULu7K1vXxVI', title: '서울약령시 한방진흥센터 한방톡톡 시리즈', info: '원인모를 근육통 TOP5 - 유튜브 채널', category: '유튜브 채널' },
-      { youtubeId: 'q_F44l_6dWE', title: '한미동맹 70주년 기념 세미나 영상 스케치', info: '한미우호협회, 국제안보교류협회', category: '행사 스케치' },
-      { youtubeId: '7fDTRJNBBxs', title: '장애인의 날 기념 - 2023년 따뜻한 동행', info: '동대문구 캠페인 행사 스케치', category: '캠페인' },
-      { youtubeId: 'h8sJ6fkR99E', title: 'TV홍카콜라', info: '유튜브 채널 브랜딩 및 운영', category: '유튜브 채널' },
-      { youtubeId: 'e6m51AbCCZc', title: '에스라통독사역원 말씀클립', info: '유튜브 채널 콘텐츠 제작', category: '유튜브 채널' },
-      { youtubeId: 'NwD0hEmNU2s', title: '하용조목사 기념 홍보관 다큐멘터리', info: '온누리교회 메모리얼 필름', category: '다큐멘터리' },
-      { youtubeId: 'O4TdCVa5ldw', title: '독일 도펠헤르츠 社', info: '제품 프로모션 영상', category: '프로모션' },
-      { youtubeId: 'Qmnz5iqJ8Hg', title: '6.25납북희생자 기억의 날', info: '현장 스케치 영상', category: '현장 스케치' },
-      { youtubeId: 'rFa0j2xQuzY', title: '국가란 무엇인가? PLI 특집시리즈1', info: '유튜브 채널 교육 콘텐츠', category: '교육 콘텐츠' },
-      { youtubeId: 'sAh6CJIQqyU', title: '통큰통독 90강 프로젝트', info: '에스라통독사역원 강의 영상', category: '강의 영상' },
-      { youtubeId: 'KFDxku6_2QA', title: '장군의소리', info: '유튜브 채널 브랜딩', category: '유튜브 채널' },
-      { youtubeId: 'gQHhqcEjA08', title: '서초중앙시니어스', info: '서초구립중앙노인종합복지관 홍보', category: '홍보영상' },
-      { youtubeId: 'mOTUSMr681c', title: '당과 함께한 26년(대선경선)', info: '정치 기획 홍보 영상', category: '기획 홍보' },
-      { youtubeId: 'czbuzJ29lzI', title: '국가란 무엇인가? PLI 특집시리즈2', info: '유튜브 채널 교육 콘텐츠', category: '교육 콘텐츠' },
-      { youtubeId: 'bmZ5nY5lUQU', title: '성주붉은달', info: '다큐멘터리 영화 (국회 상영작)', category: '다큐멘터리' },
-      { youtubeId: 'Hb_lW7Opymo', title: '암웨이(Amway)', info: '타이포그래피 가이드 영상', category: '가이드 영상' },
+      { youtubeId: 'iM8_tSZ_K_I', title: '뮤지컬 루쓰! 배우 선예, 이지훈, 김다현', info: '유튜브 토크쇼 (별다방토크)', category: 'DIGITAL_AI' },
+      { youtubeId: 'ULu7K1vXxVI', title: '서울약령시 한방진흥센터 한방톡톡 시리즈', info: '원인모를 근육통 TOP5 - 유튜브 채널', category: 'COMMERCIAL' },
+      { youtubeId: 'q_F44l_6dWE', title: '한미동맹 70주년 기념 세미나 영상 스케치', info: '한미우호협회, 국제안보교류협회', category: 'COMMERCIAL' },
+      { youtubeId: '7fDTRJNBBxs', title: '장애인의 날 기념 - 2023년 따뜻한 동행', info: '동대문구 캠페인 행사 스케치', category: 'COMMERCIAL' },
+      { youtubeId: 'h8sJ6fkR99E', title: 'TV홍카콜라', info: '유튜브 채널 브랜딩 및 운영', category: 'DIGITAL_AI' },
+      { youtubeId: 'e6m51AbCCZc', title: '에스라통독사역원 말씀클립', info: '유튜브 채널 콘텐츠 제작', category: 'DIGITAL_AI' },
+      { youtubeId: 'NwD0hEmNU2s', title: '하용조목사 기념 홍보관 다큐멘터리', info: '온누리교회 메모리얼 필름', category: 'DOCUMENTARY_FILM' },
+      { youtubeId: 'O4TdCVa5ldw', title: '독일 도펠헤르츠 社', info: '제품 프로모션 영상', category: 'COMMERCIAL' },
+      { youtubeId: 'Qmnz5iqJ8Hg', title: '6.25납북희생자 기억의 날', info: '현장 스케치 영상', category: 'COMMERCIAL' },
+      { youtubeId: 'rFa0j2xQuzY', title: '국가란 무엇인가? PLI 특집시리즈1', info: '유튜브 채널 교육 콘텐츠', category: 'EDUCATION' },
+      { youtubeId: 'sAh6CJIQqyU', title: '통큰통독 90강 프로젝트', info: '에스라통독사역원 강의 영상', category: 'EDUCATION' },
+      { youtubeId: 'KFDxku6_2QA', title: '장군의소리', info: '유튜브 채널 브랜딩', category: 'DIGITAL_AI' },
+      { youtubeId: 'gQHhqcEjA08', title: '서초중앙시니어스', info: '서초구립중앙노인종합복지관 홍보', category: 'COMMERCIAL' },
+      { youtubeId: 'mOTUSMr681c', title: '당과 함께한 26년(대선경선)', info: '정치 기획 홍보 영상', category: 'COMMERCIAL' },
+      { youtubeId: 'czbuzJ29lzI', title: '국가란 무엇인가? PLI 특집시리즈2', info: '유튜브 채널 교육 콘텐츠', category: 'EDUCATION' },
+      { youtubeId: 'bmZ5nY5lUQU', title: '성주붉은달', info: '다큐멘터리 영화 (국회 상영작)', category: 'DOCUMENTARY_FILM' },
+      { youtubeId: 'Hb_lW7Opymo', title: '암웨이(Amway)', info: '타이포그래피 가이드 영상', category: 'DIGITAL_AI' },
     ];
 
     // Default Partners
@@ -684,7 +712,7 @@ export default function AdminModal() {
     const minOrder = portfolio.length > 0 ? Math.min(...portfolio.map(p => p.order)) : 0;
     const newItem = {
       title: '새 포트폴리오',
-      category: '기타',
+      category: 'COMMERCIAL',
       thumbnail: '',
       videoUrl: 'placeholder',
       info: '상세 정보를 입력하세요',
