@@ -525,7 +525,9 @@ export default function AdminModal() {
     ogImage: '/og-image.png',
     favicon: '/favicon.png',
     accentColor: '#f59e0b',
-    primaryFont: 'NanumSquareNeo'
+    primaryFont: 'NanumSquareNeo',
+    aboutImageUrl: 'https://picsum.photos/seed/production-studio/1200/800',
+    processImageUrl: 'https://picsum.photos/seed/light-glow/1920/1080'
   });
 
   useEffect(() => {
@@ -715,6 +717,7 @@ export default function AdminModal() {
     };
     try {
       await addDoc(collection(db, 'partners'), newPartner);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'partners');
     }
@@ -723,6 +726,7 @@ export default function AdminModal() {
   const updatePartner = async (id: string, updates: Partial<Partner>) => {
     try {
       await updateDoc(doc(db, 'partners', id), updates);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `partners/${id}`);
     }
@@ -732,6 +736,7 @@ export default function AdminModal() {
     try {
       await deleteDoc(doc(db, 'partners', id));
       setDeleteConfirm(null);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `partners/${id}`);
     }
@@ -752,6 +757,7 @@ export default function AdminModal() {
     };
     try {
       await addDoc(collection(db, 'portfolio'), newItem);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'portfolio');
     }
@@ -760,6 +766,7 @@ export default function AdminModal() {
   const updatePortfolio = async (id: string, updates: Partial<PortfolioItem>) => {
     try {
       await updateDoc(doc(db, 'portfolio', id), updates);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `portfolio/${id}`);
     }
@@ -769,6 +776,7 @@ export default function AdminModal() {
     try {
       await deleteDoc(doc(db, 'portfolio', id));
       setDeleteConfirm(null);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `portfolio/${id}`);
     }
@@ -786,6 +794,8 @@ export default function AdminModal() {
   const updateSettings = async (updates: Partial<SiteSettings>) => {
     try {
       await setDoc(doc(db, 'settings', 'main'), { ...settings, ...updates }, { merge: true });
+      // Clear cache to ensure changes are visible on refresh
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'settings/main');
     }
@@ -1180,6 +1190,80 @@ export default function AdminModal() {
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
                         />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">섹션별 이미지 관리</h4>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase uppercase">ABOUT 섹션 이미지</label>
+                        <div className="relative group/about-img">
+                          <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
+                            {settings.aboutImageUrl ? (
+                              <img src={settings.aboutImageUrl} alt="About" className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-white/10" />
+                            )}
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/about-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                              <Upload className="w-6 h-6 text-white mb-1" />
+                              <span className="text-[10px] text-white font-bold">업로드</span>
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 1024 * 1024) {
+                                      alert('이미지 용량이 너무 큽니다 (1MB 이하 권장)');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onload = () => updateSettings({ aboutImageUrl: reader.result as string });
+                                    reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
+                                    reader.readAsDataURL(file);
+                                  }
+                                }} 
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase uppercase">PROCESS 섹션 이미지</label>
+                        <div className="relative group/process-img">
+                          <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
+                            {settings.processImageUrl ? (
+                              <img src={settings.processImageUrl} alt="Process" className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-white/10" />
+                            )}
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/process-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                              <Upload className="w-6 h-6 text-white mb-1" />
+                              <span className="text-[10px] text-white font-bold">업로드</span>
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 1024 * 1024) {
+                                      alert('이미지 용량이 너무 큽니다 (1MB 이하 권장)');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onload = () => updateSettings({ processImageUrl: reader.result as string });
+                                    reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
+                                    reader.readAsDataURL(file);
+                                  }
+                                }} 
+                              />
+                            </label>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </section>

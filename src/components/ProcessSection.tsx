@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { SiteSettings } from '@/src/types';
 
 const steps = [
   {
@@ -34,7 +35,14 @@ const steps = [
   },
 ];
 
-export default function ProcessSection() {
+interface ProcessSectionProps {
+  settings: SiteSettings | null;
+}
+
+export default function ProcessSection({ settings }: ProcessSectionProps) {
+  const defaultImageUrl = "https://picsum.photos/seed/light-glow/1920/1080";
+  const processImg = settings?.processImageUrl || defaultImageUrl;
+
   return (
     <section id="process" className="py-32 bg-black text-white">
       <div className="max-w-7xl mx-auto px-6">
@@ -51,26 +59,45 @@ export default function ProcessSection() {
 
         <div className="relative aspect-[21/9] rounded-3xl overflow-hidden mb-24 group">
           <img
-            src="https://picsum.photos/seed/light-glow/1920/1080"
+            src={processImg}
             alt="Vision Background"
             className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700"
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
-          <div className="absolute inset-0 flex items-center justify-center p-8 text-center">
+          <motion.div 
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, margin: "-100px" }}
+            className="absolute inset-0 flex items-center justify-center p-8 text-center"
+          >
             <div className="max-w-5xl space-y-8">
-              <h3 className="text-xl md:text-3xl font-regular leading-normal break-keep">
+              <motion.h3 
+                variants={{
+                  initial: { opacity: 0, y: 20, filter: 'blur(10px)' },
+                  animate: { opacity: 1, y: 0, filter: 'blur(0px)' }
+                }}
+                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="text-xl md:text-3xl font-regular leading-normal break-keep"
+              >
                 마음을 울리는 한 편의 영상이 한 사람의 생각을 바꾸고,<br />
                 그 변화가 세상을 움직이는 <span className="text-amber-500 font-bold">시작점</span>이라 믿습니다.<br />
                 단순히 미디어 콘텐츠를 만드는 것을 넘어, 사람의 마음을 움직이고<br />
                 세상을 밝히는 <span className="text-amber-500 font-bold">미디어 프로덕션</span>이 되겠습니다.
-              </h3>
-              <div className="text-white/40 italic text-sm md:text-base">
+              </motion.h3>
+              <motion.div 
+                variants={{
+                  initial: { opacity: 0, y: 10 },
+                  animate: { opacity: 1, y: 0 }
+                }}
+                transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                className="text-white/40 italic text-sm md:text-base"
+              >
                 "Arise, shine; for thy light is come, and the glory of the Lord is risen upon thee."<br />
                 (Isaiah 60:1, KJV)
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Process Steps Part */}
@@ -82,21 +109,25 @@ export default function ProcessSection() {
             {steps.map((step, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center text-center"
+                initial={{ opacity: 0, y: 30, scale: 0.9, filter: 'blur(10px)' }}
+                whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ 
+                  duration: 0.8, 
+                  delay: i * 0.1,
+                  ease: [0.22, 1, 0.36, 1]
+                }}
+                className="flex flex-col items-center text-center group"
               >
-                <div className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-sm border border-amber-500/20 flex items-center justify-center mb-8 relative">
+                <div className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-sm border border-amber-500/20 flex items-center justify-center mb-8 relative transition-all duration-500 group-hover:border-amber-500 group-hover:bg-amber-500/10 group-hover:scale-110">
                   <span className="text-amber-500 font-bold text-xl">{step.number}</span>
                   {/* Pulse Effect for current step (simulated) */}
                   {i === 0 && (
-                    <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping" />
+                    <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping group-hover:animate-none" />
                   )}
                 </div>
-                <h3 className="text-lg font-bold mb-4 tracking-tight">{step.title}</h3>
-                <p className="text-white/40 text-xs leading-relaxed font-light break-keep">
+                <h3 className="text-lg font-bold mb-4 tracking-tight group-hover:text-amber-500 transition-colors">{step.title}</h3>
+                <p className="text-white/40 text-xs leading-relaxed font-light break-keep group-hover:text-white/70 transition-colors">
                   {step.description}
                 </p>
               </motion.div>

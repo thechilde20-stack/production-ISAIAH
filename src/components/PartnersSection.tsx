@@ -17,32 +17,23 @@ const INITIAL_PARTNERS: Partner[] = [
   isFeatured: true
 }));
 
-export default function PartnersSection() {
+interface PartnersSectionProps {
+  initialData: Partner[];
+  isLoaded: boolean;
+}
+
+export default function PartnersSection({ initialData, isLoaded }: PartnersSectionProps) {
   const [partners, setPartners] = useState<Partner[]>([]);
 
   useEffect(() => {
-    const fetchPartners = async () => {
-      const path = 'partners';
-      try {
-        const q = query(collection(db, path), orderBy('order', 'asc'));
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Partner));
-          setPartners(items);
-        } else {
-          setPartners(INITIAL_PARTNERS);
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, path);
+    if (isLoaded) {
+      if (initialData.length > 0) {
+        setPartners(initialData);
+      } else {
+        setPartners(INITIAL_PARTNERS);
       }
-    };
-
-    fetchPartners();
-  }, []);
+    }
+  }, [initialData, isLoaded]);
 
   const sortedPartners = partners.length > 0 ? partners : INITIAL_PARTNERS;
 

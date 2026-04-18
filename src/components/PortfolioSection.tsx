@@ -63,7 +63,12 @@ function YoutubeThumbnail({ videoId, alt }: { videoId: string; alt: string }) {
   );
 }
 
-export default function PortfolioSection() {
+interface PortfolioSectionProps {
+  initialData: PortfolioItem[];
+  isLoaded: boolean;
+}
+
+export default function PortfolioSection({ initialData, isLoaded }: PortfolioSectionProps) {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
@@ -75,29 +80,14 @@ export default function PortfolioSection() {
   }, [activeCategory]);
 
   useEffect(() => {
-    const fetchPortfolio = async () => {
-      const path = 'portfolio';
-      try {
-        const q = query(collection(db, path), orderBy('order', 'asc'));
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-          const items = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as PortfolioItem));
-          setPortfolio(items);
-        } else {
-          // Fallback to mock data if collection is empty
-          setPortfolio(MOCK_PORTFOLIO);
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, path);
+    if (isLoaded) {
+      if (initialData.length > 0) {
+        setPortfolio(initialData);
+      } else {
+        setPortfolio(MOCK_PORTFOLIO);
       }
-    };
-
-    fetchPortfolio();
-  }, []);
+    }
+  }, [initialData, isLoaded]);
 
   const filteredPortfolio = activeCategory === 'ALL' 
     ? portfolio 

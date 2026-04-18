@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Lightbulb, Rocket, BookOpen, Layers } from 'lucide-react';
+import { SiteSettings } from '@/src/types';
 
 const whyIsaiah = [
   {
@@ -24,24 +25,31 @@ const whyIsaiah = [
   },
 ];
 
-export default function AboutSection() {
+interface AboutSectionProps {
+  settings: SiteSettings | null;
+}
+
+export default function AboutSection({ settings }: AboutSectionProps) {
+  const defaultImageUrl = "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&q=80&w=800&h=1000";
+  const aboutImg = settings?.aboutImageUrl || defaultImageUrl;
+
   return (
     <section id="about" className="py-24 bg-[#0a0a0a] text-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         {/* Top Section: Intro */}
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+        <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center mb-32">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-12">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tighter leading-tight mb-12">
               단순 영상 제작을 넘어,<br />
               <span className="text-[var(--accent-color)]">목적과 메시지</span>를 설계합니다.
             </h2>
             
-            <div className="space-y-8 text-white/60 text-lg leading-relaxed font-light whitespace-pre-line">
+            <div className="space-y-6 md:space-y-8 text-white/60 text-base md:text-lg leading-relaxed font-light whitespace-pre-line">
               <p>
                 프로덕션 이사야(ISAIAH)는 영상이 지닌 힘을 믿습니다.<br />
                 화려함을 쫓기보다, 클라이언트가 진정으로 전달하고자 하는 메시지의 본질을 먼저 묻습니다.
@@ -64,9 +72,9 @@ export default function AboutSection() {
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="aspect-[4/5] rounded-3xl overflow-hidden">
+            <div className="aspect-[2/3] rounded-3xl overflow-hidden shadow-2xl">
               <img 
-                src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&q=80&w=800&h=1000" 
+                src={aboutImg}
                 alt="Professional studio film production" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"

@@ -46,4 +46,8 @@ export interface SiteSettings {
   // Advanced
   accentColor: string;
   primaryFont: 'NanumSquareNeo' | 'NotoSansKR' | 'Pretendard';
+  
+  // Section Images
+  aboutImageUrl?: string;
+  processImageUrl?: string;
 }
