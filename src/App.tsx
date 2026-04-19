@@ -164,7 +164,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage settings={settings} portfolio={portfolio} partners={partners} isDataLoaded={isDataLoaded} />} />
           <Route path="/campaign" element={<CampaignPage settings={settings} portfolio={portfolio} isLoaded={isDataLoaded} />} />
-          <Route path="/campaign/" element={<CampaignPage settings={settings} portfolio={portfolio} isLoaded={isDataLoaded} />} />
+          <Route path="*" element={<HomePage settings={settings} portfolio={portfolio} partners={partners} isDataLoaded={isDataLoaded} />} />
         </Routes>
         <Footer />
         <AdminModal />

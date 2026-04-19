@@ -65,8 +65,10 @@ ${message}
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve("dist");
     app.use(express.static(distPath));
+    
+    // Support direct access to /campaign and other routes
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
