@@ -5,6 +5,7 @@ import { cn } from '@/src/lib/utils';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/src/firebase';
 import { PortfolioItem } from '@/src/types';
+import YoutubeThumbnail from './YoutubeThumbnail';
 
 const INITIAL_ITEMS = 6;
 const BATCH_SIZE = 20;
@@ -35,33 +36,6 @@ const MOCK_PORTFOLIO: PortfolioItem[] = [
   { id: '16', title: '성주붉은달', categories: ['DOCUMENTARY_FILM'], thumbnail: '', videoUrl: 'bmZ5nY5lUQU', info: '다큐멘터리 영화 (국회 상영작)', order: 16, createdAt: Date.now() },
   { id: '17', title: '암웨이(Amway)', categories: ['DIGITAL_AI'], thumbnail: '', videoUrl: 'Hb_lW7Opymo', info: '타이포그래피 가이드 영상', order: 17, createdAt: Date.now() },
 ];
-
-function YoutubeThumbnail({ videoId, alt }: { videoId: string; alt: string }) {
-  const [src, setSrc] = useState(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    setSrc(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
-    setHasError(false);
-  }, [videoId]);
-
-  const handleError = () => {
-    if (!hasError) {
-      setSrc(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
-      setHasError(true);
-    }
-  };
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      onError={handleError}
-      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-      referrerPolicy="no-referrer"
-    />
-  );
-}
 
 interface PortfolioSectionProps {
   initialData: PortfolioItem[];
@@ -138,7 +112,7 @@ export default function PortfolioSection({ initialData, isLoaded }: PortfolioSec
         </div>
 
         {/* Category Filter Tabs */}
-        <div className="flex flex-wrap items-center justify-end gap-x-8 gap-y-4 mb-12 border-b border-white/10">
+        <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-4 mb-12 border-b border-white/10">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -160,7 +134,7 @@ export default function PortfolioSection({ initialData, isLoaded }: PortfolioSec
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[400px]">
           <AnimatePresence mode="popLayout">
             {filteredPortfolio.slice(0, visibleCount).map((item, index) => (
               <motion.div

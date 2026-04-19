@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import AboutSection from './components/AboutSection';
@@ -10,10 +11,38 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import AdminModal from './components/AdminModal';
 import ScrollButtons from './components/ScrollButtons';
+import CampaignPage from './pages/CampaignPage';
 import { db } from './firebase';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { SiteSettings, PortfolioItem, Partner } from './types';
 import { handleFirestoreError, OperationType } from './firebase';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
+function HomePage({ settings, portfolio, partners, isDataLoaded }: { 
+  settings: SiteSettings | null; 
+  portfolio: PortfolioItem[]; 
+  partners: Partner[]; 
+  isDataLoaded: boolean;
+}) {
+  return (
+    <main>
+      <Hero settings={settings} />
+      <AboutSection settings={settings} />
+      <ServiceSection />
+      <PortfolioSection initialData={portfolio.filter(item => item.section !== 'campaign-portfolio')} isLoaded={isDataLoaded} />
+      <ProcessSection settings={settings} />
+      <PartnersSection initialData={partners} isLoaded={isDataLoaded} />
+      <ContactSection />
+    </main>
+  );
+}
 
 export default function App() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -116,20 +145,18 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black font-primary selection:bg-[var(--accent-color)] selection:text-black">
-      <Navbar />
-      <main>
-        <Hero settings={settings} />
-        <AboutSection settings={settings} />
-        <ServiceSection />
-        <PortfolioSection initialData={portfolio} isLoaded={isDataLoaded} />
-        <ProcessSection settings={settings} />
-        <PartnersSection initialData={partners} isLoaded={isDataLoaded} />
-        <ContactSection />
-      </main>
-      <Footer />
-      <AdminModal />
-      <ScrollButtons />
-    </div>
+    <BrowserRouter>
+      <ScrollToTop />
+      <div className="min-h-screen bg-black font-primary selection:bg-[var(--accent-color)] selection:text-black">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HomePage settings={settings} portfolio={portfolio} partners={partners} isDataLoaded={isDataLoaded} />} />
+          <Route path="/campaign" element={<CampaignPage settings={settings} portfolio={portfolio} isLoaded={isDataLoaded} />} />
+        </Routes>
+        <Footer />
+        <AdminModal />
+        <ScrollButtons />
+      </div>
+    </BrowserRouter>
   );
 }

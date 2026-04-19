@@ -25,6 +25,7 @@ export default function ContactSection() {
       await addDoc(collection(db, path), {
         ...formData,
         createdAt: Date.now(),
+        isRead: false,
       });
 
       // 2. Send email via backend API

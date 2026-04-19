@@ -50,10 +50,6 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
         <div className="grid md:grid-cols-2 gap-12 mb-20">
           <div>
             <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase">PROCESS</h4>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-tight">
-              STORIES THAT TOUCH<br />
-              IMAGES THAT LAST
-            </h2>
           </div>
         </div>
 

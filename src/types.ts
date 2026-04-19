@@ -6,8 +6,16 @@ export interface PortfolioItem {
   thumbnail: string;
   videoUrl: string; // YouTube ID or URL
   info?: string;
+  description?: string;
   order: number;
   createdAt: number;
+  // Campaign fields
+  section?: 'general' | 'campaign-portfolio';
+  year?: string;
+  clientOrCandidate?: string;
+  tags?: string[];
+  sortOrder?: number;
+  campaignTier?: 'presidential-party' | 'national-local-election' | 'planned-campaign-film';
 }
 
 export interface ContactMessage {
@@ -17,6 +25,7 @@ export interface ContactMessage {
   phone: string;
   message: string;
   createdAt: number;
+  isRead?: boolean;
 }
 
 export interface Partner {
@@ -50,4 +59,20 @@ export interface SiteSettings {
   // Section Images
   aboutImageUrl?: string;
   processImageUrl?: string;
+
+  // Campaign Page Settings
+  campaignHeroVideoId?: string;
+  campaignHeroImageUrl?: string;
+  campaignHeroHeadline?: string;
+  campaignHeroSubcopy?: string;
+  campaignHeroDescription?: string;
+  campaignPortfolioTitle?: string;
+  campaignPortfolioHeadline?: string;
+  campaignPortfolioDescription?: string;
+  
+  // Campaign Service Images
+  campaignService1Image?: string;
+  campaignService2Image?: string;
+  campaignService3Image?: string;
+  campaignService4Image?: string;
 }

@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Cloud } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
-  { name: 'ABOUT', href: '#about' },
-  { name: 'SERVICE', href: '#service' },
-  { name: 'WORKS', href: '#work' },
-  { name: 'PROCESS', href: '#process' },
-  { name: 'CONTACT', href: '#contact' },
+  { name: 'ABOUT', href: '/#about' },
+  { name: 'SERVICE', href: '/#service' },
+  { name: 'WORKS', href: '/#work' },
+  { name: 'PROCESS', href: '/#process' },
+  { name: 'CONTACT', href: '/#contact' },
 ];
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,15 +26,26 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleNavClick = (href: string) => {
+    setIsMobileMenuOpen(false);
+    if (location.pathname === '/' && href.startsWith('/#')) {
+      const id = href.substring(2);
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <nav
       className={cn(
         'fixed top-0 left-0 w-full z-50 transition-all duration-300 px-6 py-4',
-        isScrolled ? 'bg-black/80 backdrop-blur-md py-3' : 'bg-transparent'
+        isScrolled || location.pathname !== '/' ? 'bg-black/80 backdrop-blur-md py-3' : 'bg-transparent'
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <a href="/" className="flex items-center">
+        <Link to="/" className="flex items-center" onClick={() => window.scrollTo(0, 0)}>
           {!logoError ? (
             <img 
               src="/logo.png" 
@@ -46,18 +59,19 @@ export default function Navbar() {
               PRODUCTION <span className="text-amber-500">ISAIAH</span>
             </span>
           )}
-        </a>
+        </Link>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.name}
-              href={item.href}
+              to={item.href}
+              onClick={() => handleNavClick(item.href)}
               className="text-sm font-medium text-white/70 hover:text-amber-500 transition-colors tracking-widest"
             >
               {item.name}
-            </a>
+            </Link>
           ))}
           <a
             href="https://zootv.ezconnect.to/"
@@ -90,14 +104,14 @@ export default function Navbar() {
           >
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className="text-lg font-medium text-white/80 hover:text-amber-500"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => handleNavClick(item.href)}
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
               <a
                 href="https://zootv.ezconnect.to/"

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch, setDoc, getDocs, where } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
   DndContext,
@@ -25,18 +25,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Helper to extract YouTube ID
-const extractYoutubeId = (url: string) => {
-  if (!url) return '';
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[7].length === 11) ? match[7] : url;
-};
-
 const MAIN_CATEGORIES = [
   { value: 'DIGITAL_AI', label: 'DIGITAL & AI', subItems: 'AI Solution / New Media / SNS / Tech' },
   { value: 'COMMERCIAL', label: 'COMMERCIAL', subItems: 'CF / Brand Film / Campaign / Promo' },
   { value: 'DOCUMENTARY_FILM', label: 'DOCUMENTARY & FILM', subItems: 'Documentary / Shorts / Interview / Film' },
   { value: 'EDUCATION', label: 'EDUCATION', subItems: 'Educational / Lecture / Info / Tutorial' },
+];
+
+const CAMPAIGN_TIERS = [
+  { value: 'presidential-party', label: '대선 및 당대표' },
+  { value: 'national-local-election', label: '총선 및 지방선거' },
+  { value: 'planned-campaign-film', label: '기획 영상' },
 ];
 
 function PortfolioItemRow({ 
@@ -66,19 +65,29 @@ function PortfolioItemRow({
 
   const [localTitle, setLocalTitle] = useState(item.title);
   const [localVideoUrl, setLocalVideoUrl] = useState(item.videoUrl);
-  const [localInfo, setLocalInfo] = useState(item.info || '');
+  const [localInfo, setLocalInfo] = useState(item.info || item.description || '');
   const [localCategories, setLocalCategories] = useState<string[]>(item.categories || (item.category ? [item.category] : []));
   const [localThumbnail, setLocalThumbnail] = useState(item.thumbnail || '');
+  const [localSection, setLocalSection] = useState(item.section || 'general');
+  const [localYear, setLocalYear] = useState(item.year || '');
+  const [localClient, setLocalClient] = useState(item.clientOrCandidate || '');
+  const [localTags, setLocalTags] = useState<string[]>(item.tags || []);
+  const [localTier, setLocalTier] = useState(item.campaignTier || '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => { setLocalTitle(item.title); }, [item.title]);
   useEffect(() => { setLocalVideoUrl(item.videoUrl); }, [item.videoUrl]);
-  useEffect(() => { setLocalInfo(item.info || ''); }, [item.info]);
+  useEffect(() => { setLocalInfo(item.info || item.description || ''); }, [item.info, item.description]);
   useEffect(() => { 
     setLocalCategories(item.categories || (item.category ? [item.category] : [])); 
   }, [item.categories, item.category]);
   useEffect(() => { setLocalThumbnail(item.thumbnail || ''); }, [item.thumbnail]);
+  useEffect(() => { setLocalSection(item.section || 'general'); }, [item.section]);
+  useEffect(() => { setLocalYear(item.year || ''); }, [item.year]);
+  useEffect(() => { setLocalClient(item.clientOrCandidate || ''); }, [item.clientOrCandidate]);
+  useEffect(() => { setLocalTags(item.tags || []); }, [item.tags]);
+  useEffect(() => { setLocalTier(item.campaignTier || ''); }, [item.campaignTier]);
 
   const handleBlur = (field: string, value: string) => {
     let finalValue = value;
@@ -174,6 +183,21 @@ function PortfolioItemRow({
           <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
         </label>
 
+        {localThumbnail && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setLocalThumbnail('');
+              onUpdate(item.id, { thumbnail: '' });
+            }}
+            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-red-600 z-20"
+            title="이미지 삭제"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+
         {uploadError && (
           <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-[8px] py-0.5 px-1 text-center truncate">
             {uploadError}
@@ -182,6 +206,32 @@ function PortfolioItemRow({
       </div>
 
       <div className="flex-1 grid grid-cols-2 gap-3">
+        <div className="col-span-2 flex items-center space-x-4 mb-1">
+          <label className="text-[10px] text-white/40 font-bold uppercase">소속 섹션:</label>
+          <div className="flex space-x-2">
+            {[
+              { id: 'general', label: 'GENERAL PORTFOLIO' },
+              { id: 'campaign-portfolio', label: 'CAMPAIGN PORTFOLIO' }
+            ].map(sec => (
+              <button
+                key={sec.id}
+                onClick={() => {
+                  setLocalSection(sec.id as any);
+                  onUpdate(item.id, { section: sec.id as any });
+                }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[9px] font-black transition-all border",
+                  localSection === sec.id 
+                    ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/10" 
+                    : "bg-white/5 border-white/10 text-white/30 hover:text-white"
+                )}
+              >
+                {sec.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <input
           type="text"
           value={localTitle}
@@ -195,50 +245,89 @@ function PortfolioItemRow({
           value={localVideoUrl}
           onChange={(e) => setLocalVideoUrl(e.target.value)}
           onBlur={(e) => handleBlur('videoUrl', e.target.value)}
-          placeholder="유튜브 URL 또는 ID"
+          placeholder="URL 또는 ID"
           className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
         />
-        <input
-          type="text"
-          value={localInfo}
-          onChange={(e) => setLocalInfo(e.target.value)}
-          onBlur={(e) => handleBlur('info', e.target.value)}
-          placeholder="상세 정보 (클라이언트, 설명 등)"
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2"
-        />
-        <div className="col-span-2 space-y-2">
-          <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (중복 가능)</label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {MAIN_CATEGORIES.map((cat) => (
-              <div key={cat.value} className="relative group/cat">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newCategories = localCategories.includes(cat.value)
-                      ? localCategories.filter(c => c !== cat.value)
-                      : [...localCategories, cat.value];
-                    setLocalCategories(newCategories);
-                    onUpdate(item.id, { categories: newCategories });
-                  }}
-                  className={cn(
-                    "w-full py-2 px-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all border whitespace-nowrap overflow-hidden text-ellipsis",
-                    localCategories.includes(cat.value) 
-                      ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
-                      : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
-                  )}
-                >
-                  {cat.label}
-                </button>
-                {/* Hover Details Popover */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 p-2 bg-[#1a1a1a] border border-white/10 rounded-xl opacity-0 pointer-events-none group-hover/cat:opacity-100 transition-all duration-300 z-30 text-center shadow-2xl scale-95 group-hover/cat:scale-100">
-                  <p className="text-[10px] text-amber-500 font-bold mb-1">{cat.label}</p>
-                  <p className="text-[9px] text-white/60 leading-tight">{cat.subItems}</p>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#1a1a1a]" />
-                </div>
+        
+        {localSection === 'campaign-portfolio' ? (
+          <>
+            <textarea
+              value={localInfo}
+              onChange={(e) => setLocalInfo(e.target.value)}
+              onBlur={(e) => handleBlur('info', e.target.value)}
+              placeholder="상세 정보 (연도, 클라이언트, 설명 등)"
+              rows={2}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2 resize-none"
+            />
+            <div className="col-span-2 space-y-2">
+              <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (필수)</label>
+              <div className="flex flex-wrap gap-2">
+                {CAMPAIGN_TIERS.map((tier) => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => {
+                      setLocalTier(tier.value as any);
+                      onUpdate(item.id, { campaignTier: tier.value as any });
+                    }}
+                    className={cn(
+                      "py-1.5 px-4 rounded-lg text-[10px] font-bold transition-all border",
+                      localTier === tier.value 
+                        ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                        : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                    )}
+                  >
+                    {tier.label}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={localInfo}
+              onChange={(e) => setLocalInfo(e.target.value)}
+              onBlur={(e) => handleBlur('info', e.target.value)}
+              placeholder="상세 정보 (클라이언트, 설명 등)"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2"
+            />
+            <div className="col-span-2 space-y-2">
+              <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (중복 가능)</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {MAIN_CATEGORIES.map((cat) => (
+                  <div key={cat.value} className="relative group/cat">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCategories = localCategories.includes(cat.value)
+                          ? localCategories.filter(c => c !== cat.value)
+                          : [...localCategories, cat.value];
+                        setLocalCategories(newCategories);
+                        onUpdate(item.id, { categories: newCategories });
+                      }}
+                      className={cn(
+                        "w-full py-2 px-1 rounded-lg text-[9px] md:text-[10px] font-bold transition-all border whitespace-nowrap overflow-hidden text-ellipsis",
+                        localCategories.includes(cat.value) 
+                          ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                          : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
+                      )}
+                    >
+                      {cat.label}
+                    </button>
+                    {/* Hover Details Popover */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 p-2 bg-[#1a1a1a] border border-white/10 rounded-xl opacity-0 pointer-events-none group-hover/cat:opacity-100 transition-all duration-300 z-30 text-center shadow-2xl scale-95 group-hover/cat:scale-100">
+                      <p className="text-[10px] text-amber-500 font-bold mb-1">{cat.label}</p>
+                      <p className="text-[9px] text-white/60 leading-tight">{cat.subItems}</p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#1a1a1a]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex items-center space-x-2">
@@ -384,6 +473,21 @@ function PartnerRow({
           <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
         </label>
 
+        {localLogoUrl && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setLocalLogoUrl('');
+              onUpdate(partner.id, { logoUrl: '' });
+            }}
+            className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded-sm opacity-0 group-hover/logo:opacity-100 transition-opacity hover:bg-red-600 z-20"
+            title="이미지 삭제"
+          >
+            <Trash2 className="w-2.5 h-2.5" />
+          </button>
+        )}
+
         {uploadError && (
           <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-[7px] py-0.5 px-1 text-center truncate">
             {uploadError}
@@ -445,17 +549,37 @@ function PartnerRow({
 function ContactRow({ 
   contact, 
   onDelete, 
+  onRead,
   deleteConfirm, 
   setDeleteConfirm 
 }: any) {
   const date = new Date(contact.createdAt).toLocaleString('ko-KR');
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 group">
+    <div 
+      onClick={() => !contact.isRead && onRead(contact.id)}
+      className={cn(
+        "bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 group transition-all relative overflow-hidden",
+        !contact.isRead && "bg-amber-500/5 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)] cursor-pointer hover:bg-amber-500/10"
+      )}
+    >
+      {!contact.isRead && (
+        <div className="absolute top-0 right-0 p-1">
+          <div className="bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
+            NEW
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-start">
         <div className="space-y-1">
           <div className="flex items-center space-x-3">
-            <span className="text-lg font-bold text-white">{contact.name}</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-white">{contact.name}</span>
+              {!contact.isRead && (
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              )}
+            </div>
             <span className="text-xs text-white/40">{date}</span>
           </div>
           <div className="flex items-center space-x-4 text-sm text-amber-500/80">
@@ -470,13 +594,19 @@ function ContactRow({
             <div className="flex items-center space-x-2 bg-red-500/10 border border-red-500/20 rounded-lg px-2 py-1">
               <span className="text-[10px] text-red-500 font-bold">삭제?</span>
               <button 
-                onClick={() => onDelete(contact.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(contact.id);
+                }}
                 className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-md font-bold"
               >
                 네
               </button>
               <button 
-                onClick={() => setDeleteConfirm(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteConfirm(null);
+                }}
                 className="text-[10px] text-white/40"
               >
                 취소
@@ -484,7 +614,10 @@ function ContactRow({
             </div>
           ) : (
             <button
-              onClick={() => setDeleteConfirm({ id: contact.id, type: 'contacts' })}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteConfirm({ id: contact.id, type: 'contacts' });
+              }}
               className="text-white/20 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-5 h-5" />
@@ -509,6 +642,8 @@ export default function AdminModal() {
   const [initStatus, setInitStatus] = useState<'idle' | 'confirming' | 'loading' | 'success' | 'error'>('idle');
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'portfolio' | 'partners' | 'messages' | 'settings'>('portfolio');
+  const [portfolioSubTab, setPortfolioSubTab] = useState<'general' | 'campaign'>('general');
+  const [settingsSubTab, setSettingsSubTab] = useState<'main' | 'campaign'>('main');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, type: 'portfolio' | 'partners' | 'contacts' } | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
@@ -527,7 +662,19 @@ export default function AdminModal() {
     accentColor: '#f59e0b',
     primaryFont: 'NanumSquareNeo',
     aboutImageUrl: 'https://picsum.photos/seed/production-studio/1200/800',
-    processImageUrl: 'https://picsum.photos/seed/light-glow/1920/1080'
+    processImageUrl: 'https://picsum.photos/seed/light-glow/1920/1080',
+    campaignHeroVideoId: '0BKvOfTyLmU',
+    campaignHeroImageUrl: 'https://picsum.photos/seed/campaign-hero/1920/1080?blur=4',
+    campaignHeroHeadline: '선거는 초단위의 속도전,\n메시지는 영상이 될 때 힘을 가집니다.',
+    campaignHeroSubcopy: 'Real-time Workflow, Cinematic Story',
+    campaignHeroDescription: '기획, 촬영, 편집, 현장 대응, 라이브, 브랜딩까지\n후보와 캠프의 철학을 유권자에게 전달하는 캠페인 미디어 통합 솔루션',
+    campaignPortfolioTitle: 'Portfolio Selection',
+    campaignPortfolioHeadline: '입증된 결과로 말하는 캠페인 미디어 레코드',
+    campaignPortfolioDescription: '단순 나열이 아닌, 체급별 분류를 통해 캠페인 수행 경험과 메시지 설계 역량을 보여줍니다.',
+    campaignService1Image: 'https://picsum.photos/seed/server-infrastructure/800/600',
+    campaignService2Image: 'https://picsum.photos/seed/cinematic-production/800/600',
+    campaignService3Image: 'https://picsum.photos/seed/political-event/800/600',
+    campaignService4Image: 'https://picsum.photos/seed/brand-identity/800/600'
   });
 
   useEffect(() => {
@@ -607,27 +754,54 @@ export default function AdminModal() {
     setIsInitializing(true);
     setInitStatus('loading');
 
-    const batch = writeBatch(db);
+    try {
+      // 기존 데이터 삭제 (중복 방지)
+      const portSnapshot = await getDocs(collection(db, 'portfolio'));
+      const partSnapshot = await getDocs(collection(db, 'partners'));
+      
+      const clearBatch = writeBatch(db);
+      portSnapshot.forEach(d => clearBatch.delete(d.ref));
+      partSnapshot.forEach(d => clearBatch.delete(d.ref));
+      await clearBatch.commit();
 
-    // Default Portfolio
-    const defaultPortfolio = [
-      { youtubeId: 'iM8_tSZ_K_I', title: '뮤지컬 루쓰! 배우 선예, 이지훈, 김다현', info: '유튜브 토크쇼 (별다방토크)', category: 'DIGITAL_AI' },
+      const batch = writeBatch(db);
+
+      // Default Portfolio (Removing items that belong to Campaign)
+      const defaultPortfolio = [
+        { youtubeId: 'iM8_tSZ_K_I', title: '뮤지컬 루쓰! 배우 선예, 이지훈, 김다현', info: '유튜브 토크쇼 (별다방토크)', category: 'DIGITAL_AI' },
       { youtubeId: 'ULu7K1vXxVI', title: '서울약령시 한방진흥센터 한방톡톡 시리즈', info: '원인모를 근육통 TOP5 - 유튜브 채널', category: 'COMMERCIAL' },
       { youtubeId: 'q_F44l_6dWE', title: '한미동맹 70주년 기념 세미나 영상 스케치', info: '한미우호협회, 국제안보교류협회', category: 'COMMERCIAL' },
       { youtubeId: '7fDTRJNBBxs', title: '장애인의 날 기념 - 2023년 따뜻한 동행', info: '동대문구 캠페인 행사 스케치', category: 'COMMERCIAL' },
-      { youtubeId: 'h8sJ6fkR99E', title: 'TV홍카콜라', info: '유튜브 채널 브랜딩 및 운영', category: 'DIGITAL_AI' },
       { youtubeId: 'e6m51AbCCZc', title: '에스라통독사역원 말씀클립', info: '유튜브 채널 콘텐츠 제작', category: 'DIGITAL_AI' },
       { youtubeId: 'NwD0hEmNU2s', title: '하용조목사 기념 홍보관 다큐멘터리', info: '온누리교회 메모리얼 필름', category: 'DOCUMENTARY_FILM' },
       { youtubeId: 'O4TdCVa5ldw', title: '독일 도펠헤르츠 社', info: '제품 프로모션 영상', category: 'COMMERCIAL' },
       { youtubeId: 'Qmnz5iqJ8Hg', title: '6.25납북희생자 기억의 날', info: '현장 스케치 영상', category: 'COMMERCIAL' },
       { youtubeId: 'rFa0j2xQuzY', title: '국가란 무엇인가? PLI 특집시리즈1', info: '유튜브 채널 교육 콘텐츠', category: 'EDUCATION' },
       { youtubeId: 'sAh6CJIQqyU', title: '통큰통독 90강 프로젝트', info: '에스라통독사역원 강의 영상', category: 'EDUCATION' },
-      { youtubeId: 'KFDxku6_2QA', title: '장군의소리', info: '유튜브 채널 브랜딩', category: 'DIGITAL_AI' },
       { youtubeId: 'gQHhqcEjA08', title: '서초중앙시니어스', info: '서초구립중앙노인종합복지관 홍보', category: 'COMMERCIAL' },
-      { youtubeId: 'mOTUSMr681c', title: '당과 함께한 26년(대선경선)', info: '정치 기획 홍보 영상', category: 'COMMERCIAL' },
       { youtubeId: 'czbuzJ29lzI', title: '국가란 무엇인가? PLI 특집시리즈2', info: '유튜브 채널 교육 콘텐츠', category: 'EDUCATION' },
       { youtubeId: 'bmZ5nY5lUQU', title: '성주붉은달', info: '다큐멘터리 영화 (국회 상영작)', category: 'DOCUMENTARY_FILM' },
       { youtubeId: 'Hb_lW7Opymo', title: '암웨이(Amway)', info: '타이포그래피 가이드 영상', category: 'DIGITAL_AI' },
+    ];
+
+    const campaignPortfolio = [
+      { title: "2021 대선 경선 캠페인", clientOrCandidate: "홍준표 후보", year: "2021", description: "대선 경선 과정에서 사용된 캠페인 영상 및 메시지 콘텐츠", youtubeUrl: "https://youtu.be/mOTUSMr681c", campaignTier: "presidential-party" as const },
+      { title: "TV홍카콜라 제작 및 운영", clientOrCandidate: "TV홍카콜라", year: "2018-2019", description: "유튜브 채널 제작 및 운영 프로젝트", youtubeUrl: "https://youtu.be/aFk3fou3O8M", campaignTier: "presidential-party" as const },
+      { title: "2019 전진당 캠페인", clientOrCandidate: "이언주", year: "2019", description: "정당 브랜딩 및 메시지 콘텐츠", youtubeUrl: "https://youtu.be/Cxthyrst0ss", campaignTier: "presidential-party" as const },
+      { title: "장군의소리 제작 및 운영", clientOrCandidate: "대한민국수호예비역장성단", year: "2019-2020", description: "정책·시사 채널 제작 및 운영", youtubeUrl: "https://www.youtube.com/watch?v=JuCCipC9y5w&t=60s", campaignTier: "presidential-party" as const },
+      { title: "2024 총선 동대문구을", clientOrCandidate: "김경진 후보", year: "2024", description: "총선 후보 브랜딩 및 메시지 전달용 캠페인 영상", youtubeUrl: "https://youtu.be/nOhMqgvfyfI", campaignTier: "national-local-election" as const },
+      { title: "2020 총선 인천미추홀을", clientOrCandidate: "윤상현 후보", year: "2020", description: "총선 후보 홍보 캠페인 영상", youtubeUrl: "https://youtu.be/AAm0mEKYJK4", campaignTier: "national-local-election" as const },
+      { title: "2020 총선 부산남구을", clientOrCandidate: "이언주 후보", year: "2020", description: "지역 선거용 홍보 영상", youtubeUrl: "https://youtu.be/udgkdzqjW8M", campaignTier: "national-local-election" as const },
+      { title: "2020 총선 대구수성을", clientOrCandidate: "홍준표 후보", year: "2020", description: "총선 후보 브랜딩 영상", youtubeUrl: "https://youtu.be/GrmEzOeHcUs", campaignTier: "national-local-election" as const },
+      { title: "2022 동대문구청장 예비후보", clientOrCandidate: "이필형 후보", year: "2022", description: "지역 기반 예비후보 홍보 영상", youtubeUrl: "https://youtu.be/YapwF2e8Gc4", campaignTier: "national-local-election" as const },
+      { title: "2022 국회의원 보궐선거", clientOrCandidate: "도건우 후보", year: "2022", description: "보궐선거 후보 홍보 영상", youtubeUrl: "https://youtu.be/5gV_E65ATPM", campaignTier: "national-local-election" as const },
+      { title: "2018 지방선거 송파을 캠프", clientOrCandidate: "배현진 후보", year: "2018", description: "지방선거 캠프 홍보 영상", youtubeUrl: "https://youtu.be/SrHgsXXiTqc", campaignTier: "national-local-election" as const },
+      { title: "2022 평택 지제세교지구 조합장선거", clientOrCandidate: "이성택 후보", year: "2022", description: "조합장 선거 홍보 영상", youtubeUrl: "https://youtu.be/kOoWQsOxRSI", campaignTier: "national-local-election" as const },
+      { title: "2022 제12대 양지회장 선거", clientOrCandidate: "양지회", year: "2022", description: "단체 선거 홍보 콘텐츠", youtubeUrl: "https://youtu.be/kAqVm_unYhg", campaignTier: "national-local-election" as const },
+      { title: "동대문을 걷다 시네마틱 프롤로그", clientOrCandidate: "동대문구청장 출판기념회", year: "2023", description: "출판기념회 오프닝 시네마틱 영상", youtubeUrl: "https://youtu.be/B1QYjFtsgzw?si=gNyDxsBFgttjLpgz", campaignTier: "planned-campaign-film" as const },
+      { title: "세이브 코리아 국가비상기도회", clientOrCandidate: "세이브 코리아", year: "2025", description: "오프닝 및 홍보 영상", youtubeUrl: "https://youtu.be/udM0LK1x1oU?si=AlSGWXnylxfLeJaX", campaignTier: "planned-campaign-film" as const },
+      { title: "거룩한 방파제 홍보영상", clientOrCandidate: "거룩한 방파제", year: "2025", description: "캠페인 홍보 영상", youtubeUrl: "https://youtu.be/WInbYy2CWxM?si=q5B7kn1OpD4uhvZx", campaignTier: "planned-campaign-film" as const },
+      { title: "성평등가족부 반대국민대회", clientOrCandidate: "국민대회", year: "2025", description: "행사 홍보 및 참여 독려 영상", youtubeUrl: "https://youtu.be/jNClNV8tY4Q?si=k6B3FzqaPAdxn5Vq", campaignTier: "planned-campaign-film" as const }
     ];
 
     // Default Partners
@@ -652,7 +826,25 @@ export default function AdminModal() {
         videoUrl: item.youtubeId,
         info: item.info,
         order: index + 1,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        section: 'general'
+      });
+    });
+
+    campaignPortfolio.forEach((item, index) => {
+      const ref = doc(collection(db, 'portfolio'));
+      batch.set(ref, {
+        title: item.title,
+        thumbnail: '',
+        videoUrl: extractYoutubeId(item.youtubeUrl),
+        year: item.year,
+        clientOrCandidate: item.clientOrCandidate,
+        info: item.description,
+        campaignTier: (item as any).campaignTier,
+        section: 'campaign-portfolio',
+        order: defaultPortfolio.length + index + 1,
+        createdAt: Date.now(),
+        categories: []
       });
     });
 
@@ -661,13 +853,80 @@ export default function AdminModal() {
       batch.set(ref, item);
     });
 
+    await batch.commit();
+    setInitStatus('success');
+    setTimeout(() => setInitStatus('idle'), 3000);
+  } catch (err) {
+    setInitStatus('error');
+    handleFirestoreError(err, OperationType.WRITE, 'batch-init');
+  } finally {
+    setIsInitializing(false);
+  }
+};
+
+  const seedCampaignData = async () => {
+    setIsInitializing(true);
+    setInitStatus('loading');
+    
     try {
+      // 기존 캠페인 포트폴리오 항목 삭제 (중복 방지)
+      const q = query(collection(db, 'portfolio'), where('section', '==', 'campaign-portfolio'));
+      const snapshot = await getDocs(q);
+      
+      const deleteBatch = writeBatch(db);
+      snapshot.forEach((doc) => {
+        deleteBatch.delete(doc.ref);
+      });
+      await deleteBatch.commit();
+
+      const batch = writeBatch(db);
+      
+      const campaignPortfolio = [
+        { title: "2021 대선 경선 캠페인", clientOrCandidate: "홍준표 후보", year: "2021", description: "대선 경선 과정에서 사용된 캠페인 영상 및 메시지 콘텐츠", youtubeUrl: "https://youtu.be/mOTUSMr681c", campaignTier: "presidential-party" as const },
+        { title: "TV홍카콜라 제작 및 운영", clientOrCandidate: "TV홍카콜라", year: "2018-2019", description: "유튜브 채널 제작 및 운영 프로젝트", youtubeUrl: "https://youtu.be/aFk3fou3O8M", campaignTier: "presidential-party" as const },
+        { title: "2019 전진당 캠페인", clientOrCandidate: "이언주", year: "2019", description: "정당 브랜딩 및 메시지 콘텐츠", youtubeUrl: "https://youtu.be/Cxthyrst0ss", campaignTier: "presidential-party" as const },
+        { title: "장군의소리 제작 및 운영", clientOrCandidate: "대한민국수호예비역장성단", year: "2019-2020", description: "정책·시사 채널 제작 및 운영", youtubeUrl: "https://www.youtube.com/watch?v=JuCCipC9y5w&t=60s", campaignTier: "presidential-party" as const },
+        { title: "2024 총선 동대문구을", clientOrCandidate: "김경진 후보", year: "2024", description: "총선 후보 브랜딩 및 메시지 전달용 캠페인 영상", youtubeUrl: "https://youtu.be/nOhMqgvfyfI", campaignTier: "national-local-election" as const },
+        { title: "2020 총선 인천미추홀을", clientOrCandidate: "윤상현 후보", year: "2020", description: "총선 후보 홍보 캠페인 영상", youtubeUrl: "https://youtu.be/AAm0mEKYJK4", campaignTier: "national-local-election" as const },
+        { title: "2020 총선 부산남구을", clientOrCandidate: "이언주 후보", year: "2020", description: "지역 선거용 홍보 영상", youtubeUrl: "https://youtu.be/udgkdzqjW8M", campaignTier: "national-local-election" as const },
+        { title: "2020 총선 대구수성을", clientOrCandidate: "홍준표 후보", year: "2020", description: "총선 후보 브랜딩 영상", youtubeUrl: "https://youtu.be/GrmEzOeHcUs", campaignTier: "national-local-election" as const },
+        { title: "2022 동대문구청장 예비후보", clientOrCandidate: "이필형 후보", year: "2022", description: "지역 기반 예비후보 홍보 영상", youtubeUrl: "https://youtu.be/YapwF2e8Gc4", campaignTier: "national-local-election" as const },
+        { title: "2022 국회의원 보궐선거", clientOrCandidate: "도건우 후보", year: "2022", description: "보궐선거 후보 홍보 영상", youtubeUrl: "https://youtu.be/5gV_E65ATPM", campaignTier: "national-local-election" as const },
+        { title: "2018 지방선거 송파을 캠프", clientOrCandidate: "배현진 후보", year: "2018", description: "지방선거 캠프 홍보 영상", youtubeUrl: "https://youtu.be/SrHgsXXiTqc", campaignTier: "national-local-election" as const },
+        { title: "2022 평택 지제세교지구 조합장선거", clientOrCandidate: "이성택 후보", year: "2022", description: "조합장 선거 홍보 영상", youtubeUrl: "https://youtu.be/kOoWQsOxRSI", campaignTier: "national-local-election" as const },
+        { title: "2022 제12대 양지회장 선거", clientOrCandidate: "양지회", year: "2022", description: "단체 선거 홍보 콘텐츠", youtubeUrl: "https://youtu.be/kAqVm_unYhg", campaignTier: "national-local-election" as const },
+        { title: "동대문을 걷다 시네마틱 프롤로그", clientOrCandidate: "동대문구청장 출판기념회", year: "2023", description: "출판기념회 오프닝 시네마틱 영상", youtubeUrl: "https://youtu.be/B1QYjFtsgzw?si=gNyDxsBFgttjLpgz", campaignTier: "planned-campaign-film" as const },
+        { title: "세이브 코리아 국가비상기도회", clientOrCandidate: "세이브 코리아", year: "2025", description: "오프닝 및 홍보 영상", youtubeUrl: "https://youtu.be/udM0LK1x1oU?si=AlSGWXnylxfLeJaX", campaignTier: "planned-campaign-film" as const },
+        { title: "거룩한 방파제 홍보영상", clientOrCandidate: "거룩한 방파제", year: "2025", description: "캠페인 홍보 영상", youtubeUrl: "https://www.youtube.com/watch?v=WInbYy2CWxM", campaignTier: "planned-campaign-film" as const },
+        { title: "성평등가족부 반대국민대회", clientOrCandidate: "국민대회", year: "2025", description: "행사 홍보 및 참여 독려 영상", youtubeUrl: "https://youtu.be/jNClNV8tY4Q?si=k6B3FzqaPAdxn5Vq", campaignTier: "planned-campaign-film" as const }
+      ];
+
+      const currentMaxOrder = portfolio.length > 0 ? Math.max(...portfolio.filter(p => p.section !== 'campaign-portfolio').map(p => p.order)) : 0;
+
+      campaignPortfolio.forEach((item, index) => {
+        const ref = doc(collection(db, 'portfolio'));
+        batch.set(ref, {
+          title: item.title,
+          thumbnail: '',
+          videoUrl: extractYoutubeId(item.youtubeUrl),
+          year: item.year,
+          clientOrCandidate: item.clientOrCandidate,
+          info: item.description,
+          campaignTier: (item as any).campaignTier,
+          section: 'campaign-portfolio',
+          order: currentMaxOrder + index + 1,
+          createdAt: Date.now(),
+          categories: []
+        });
+      });
+
       await batch.commit();
       setInitStatus('success');
       setTimeout(() => setInitStatus('idle'), 3000);
+      localStorage.removeItem('isaiah_site_data');
     } catch (err) {
       setInitStatus('error');
-      handleFirestoreError(err, OperationType.WRITE, 'batch-init');
+      handleFirestoreError(err, OperationType.WRITE, 'seed-campaign');
     } finally {
       setIsInitializing(false);
     }
@@ -743,17 +1002,21 @@ export default function AdminModal() {
   };
 
   // Portfolio Actions
-  const addPortfolio = async () => {
+  const addPortfolio = async (isCampaign = false) => {
     // Find min order to put at top
     const minOrder = portfolio.length > 0 ? Math.min(...portfolio.map(p => p.order)) : 0;
     const newItem = {
-      title: '새 포트폴리오',
-      categories: ['COMMERCIAL'],
+      title: isCampaign ? '새 캠페인 영상' : '새 포트폴리오',
+      categories: isCampaign ? [] : ['COMMERCIAL'],
       thumbnail: '',
       videoUrl: 'placeholder',
-      info: '상세 정보를 입력하세요',
+      info: isCampaign ? '캠페인 상세 설명을 입력하세요' : '상세 정보를 입력하세요',
       order: minOrder - 1,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      section: isCampaign ? 'campaign-portfolio' : 'general',
+      year: isCampaign ? new Date().getFullYear().toString() : '',
+      clientOrCandidate: '',
+      tags: isCampaign ? ['선거'] : []
     };
     try {
       await addDoc(collection(db, 'portfolio'), newItem);
@@ -788,6 +1051,14 @@ export default function AdminModal() {
       setDeleteConfirm(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `contacts/${id}`);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'contacts', id), { isRead: true });
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
     }
   };
 
@@ -961,11 +1232,16 @@ export default function AdminModal() {
                 <button
                   onClick={() => setActiveTab('messages')}
                   className={cn(
-                    "pb-4 text-sm font-bold tracking-widest transition-colors relative",
+                    "pb-4 text-sm font-bold tracking-widest transition-colors relative flex items-center space-x-2",
                     activeTab === 'messages' ? "text-amber-500" : "text-white/40 hover:text-white"
                   )}
                 >
-                  MESSAGES
+                  <span>MESSAGES</span>
+                  {messages.filter(m => !m.isRead).length > 0 && (
+                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-black text-[10px] font-black rounded-full shadow-[0_0_10px_rgba(245,158,11,0.3)]">
+                      {messages.filter(m => !m.isRead).length}
+                    </span>
+                  )}
                   {activeTab === 'messages' && (
                     <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
                   )}
@@ -1046,15 +1322,56 @@ export default function AdminModal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-2xl font-bold text-white">Portfolio Manager</h3>
-                      <p className="text-white/40 text-sm mt-1">포트폴리오 영상을 관리합니다.</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <button
+                          onClick={() => setPortfolioSubTab('general')}
+                          className={cn(
+                            "text-sm font-bold pb-2 transition-colors relative",
+                            portfolioSubTab === 'general' ? "text-amber-500" : "text-white/40 hover:text-white"
+                          )}
+                        >
+                          일반 포트폴리오
+                          {portfolioSubTab === 'general' && (
+                            <motion.div layoutId="subtab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setPortfolioSubTab('campaign')}
+                          className={cn(
+                            "text-sm font-bold pb-2 transition-colors relative",
+                            portfolioSubTab === 'campaign' ? "text-amber-500" : "text-white/40 hover:text-white"
+                          )}
+                        >
+                          캠페인 포트폴리오
+                          {portfolioSubTab === 'campaign' && (
+                            <motion.div layoutId="subtab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={addPortfolio}
-                      className="flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg font-bold text-sm transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>추가하기</span>
-                    </button>
+                    <div className="flex space-x-2">
+                      {portfolioSubTab === 'campaign' && (
+                        <button
+                          onClick={seedCampaignData}
+                          className="flex items-center space-x-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 px-4 py-2 rounded-lg font-bold text-sm border border-blue-500/20 transition-colors"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>캠페인 데이터 채우기</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => addPortfolio(portfolioSubTab === 'campaign')}
+                        className={cn(
+                          "flex items-center space-x-2 px-4 py-2 rounded-lg font-bold text-sm transition-colors",
+                          portfolioSubTab === 'campaign' 
+                            ? "bg-amber-500 hover:bg-amber-600 text-black" 
+                            : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10"
+                        )}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{portfolioSubTab === 'campaign' ? '캠페인 추가' : '일반 추가'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid gap-4">
@@ -1064,21 +1381,29 @@ export default function AdminModal() {
                       onDragEnd={handleDragEndPortfolio}
                     >
                       <SortableContext
-                        items={portfolio.map(i => i.id)}
+                        items={portfolio
+                          .filter(item => portfolioSubTab === 'campaign' 
+                            ? item.section === 'campaign-portfolio' 
+                            : (item.section === 'general' || !item.section))
+                          .map(i => i.id)}
                         strategy={verticalListSortingStrategy}
                       >
-                        {portfolio.map((item, index) => (
-                          <PortfolioItemRow
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            total={portfolio.length}
-                            onUpdate={updatePortfolio}
-                            onDelete={deletePortfolio}
-                            deleteConfirm={deleteConfirm}
-                            setDeleteConfirm={setDeleteConfirm}
-                          />
-                        ))}
+                        {portfolio
+                          .filter(item => portfolioSubTab === 'campaign' 
+                            ? item.section === 'campaign-portfolio' 
+                            : (item.section === 'general' || !item.section))
+                          .map((item, index, filteredArr) => (
+                            <PortfolioItemRow
+                              key={item.id}
+                              item={item}
+                              index={index}
+                              total={filteredArr.length}
+                              onUpdate={updatePortfolio}
+                              onDelete={deletePortfolio}
+                              deleteConfirm={deleteConfirm}
+                              setDeleteConfirm={setDeleteConfirm}
+                            />
+                          ))}
                       </SortableContext>
                     </DndContext>
                   </div>
@@ -1143,6 +1468,7 @@ export default function AdminModal() {
                           key={msg.id}
                           contact={msg}
                           onDelete={deleteMessage}
+                          onRead={markAsRead}
                           deleteConfirm={deleteConfirm}
                           setDeleteConfirm={setDeleteConfirm}
                         />
@@ -1151,9 +1477,32 @@ export default function AdminModal() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-12">
-                  <section className="space-y-6">
-                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">메인페이지 콘텐츠 관리</h4>
+                <div className="space-y-12 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+                  {/* Settings Sub-Tabs */}
+                  <div className="flex space-x-4 mb-8">
+                    {[
+                      { id: 'main', label: '메인 사이트 설정' },
+                      { id: 'campaign', label: '캠페인 페이지 설정' }
+                    ].map(sub => (
+                      <button
+                        key={sub.id}
+                        onClick={() => setSettingsSubTab(sub.id as any)}
+                        className={cn(
+                          "px-6 py-2 rounded-full text-xs font-bold tracking-widest transition-all",
+                          settingsSubTab === sub.id 
+                            ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                            : "bg-white/5 text-white/40 hover:text-white"
+                        )}
+                      >
+                        {sub.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {settingsSubTab === 'main' ? (
+                    <div className="space-y-12">
+                      <section className="space-y-6">
+                        <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">메인페이지 콘텐츠 관리</h4>
                     <div className="grid gap-4">
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">메인 영상 (YouTube ID)</label>
@@ -1198,7 +1547,10 @@ export default function AdminModal() {
                     <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">섹션별 이미지 관리</h4>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs text-white/40 font-bold uppercase uppercase">ABOUT 섹션 이미지</label>
+                        <label className="flex items-center justify-between">
+                          <span className="text-xs text-white/40 font-bold uppercase">ABOUT 섹션 이미지</span>
+                          <span className="text-[10px] text-white/20 font-medium">권장: 800x1200px (세로형) / 최대 1MB</span>
+                        </label>
                         <div className="relative group/about-img">
                           <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
                             {settings.aboutImageUrl ? (
@@ -1228,11 +1580,23 @@ export default function AdminModal() {
                                 }} 
                               />
                             </label>
+                            {settings.aboutImageUrl && (
+                              <button
+                                onClick={() => updateSettings({ aboutImageUrl: '' })}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover/about-img:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                title="이미지 삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs text-white/40 font-bold uppercase uppercase">PROCESS 섹션 이미지</label>
+                        <label className="flex items-center justify-between">
+                          <span className="text-xs text-white/40 font-bold uppercase">PROCESS 섹션 이미지</span>
+                          <span className="text-[10px] text-white/20 font-medium">권장: 1920x1080px (가로형) / 최대 1MB</span>
+                        </label>
                         <div className="relative group/process-img">
                           <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
                             {settings.processImageUrl ? (
@@ -1262,6 +1626,15 @@ export default function AdminModal() {
                                 }} 
                               />
                             </label>
+                            {settings.processImageUrl && (
+                              <button
+                                onClick={() => updateSettings({ processImageUrl: '' })}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover/process-img:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                title="이미지 삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1309,7 +1682,10 @@ export default function AdminModal() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs text-white/40 font-bold uppercase">OG Image</label>
+                          <label className="flex items-center justify-between">
+                            <span className="text-xs text-white/40 font-bold uppercase">OG Image</span>
+                            <span className="text-[10px] text-white/20 font-medium">1200x630px / 800KB</span>
+                          </label>
                           <div className="relative group/seo">
                             <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
                               {settings.ogImage ? (
@@ -1339,11 +1715,23 @@ export default function AdminModal() {
                                   }} 
                                 />
                               </label>
+                              {settings.ogImage && (
+                                <button
+                                  onClick={() => updateSettings({ ogImage: '' })}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover/seo:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                  title="이미지 삭제"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs text-white/40 font-bold uppercase">Favicon</label>
+                          <label className="flex items-center justify-between">
+                            <span className="text-xs text-white/40 font-bold uppercase">Favicon</span>
+                            <span className="text-[10px] text-white/20 font-medium">32x32px / 200KB</span>
+                          </label>
                           <div className="relative group/favicon">
                             <div className="w-24 h-24 bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
                               {settings.favicon ? (
@@ -1373,6 +1761,15 @@ export default function AdminModal() {
                                   }} 
                                 />
                               </label>
+                              {settings.favicon && (
+                                <button
+                                  onClick={() => updateSettings({ favicon: '' })}
+                                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover/favicon:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                  title="이미지 삭제"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1415,10 +1812,148 @@ export default function AdminModal() {
                     </div>
                   </section>
                 </div>
+              ) : (
+                <div className="space-y-12">
+                  <section className="space-y-6">
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">Hero 섹션 문구 및 미디어</h4>
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 영상 (YouTube ID)</label>
+                        <input
+                          type="text"
+                          value={settings.campaignHeroVideoId}
+                          onChange={(e) => updateSettings({ campaignHeroVideoId: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                          placeholder="영상 ID가 있는 경우 배경 이미지 대신 재생됩니다."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 메인 헤드라인</label>
+                        <textarea
+                          value={settings.campaignHeroHeadline}
+                          onChange={(e) => updateSettings({ campaignHeroHeadline: e.target.value })}
+                          rows={2}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 태그 (쉼표로 구분)</label>
+                        <input
+                          type="text"
+                          value={settings.campaignHeroSubcopy}
+                          onChange={(e) => updateSettings({ campaignHeroSubcopy: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">캠페인 페이지 설명</label>
+                        <textarea
+                          value={settings.campaignHeroDescription}
+                          onChange={(e) => updateSettings({ campaignHeroDescription: e.target.value })}
+                          rows={2}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">포트폴리오 섹션 문구</h4>
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 소제목 (라벨)</label>
+                        <input
+                          type="text"
+                          value={settings.campaignPortfolioTitle}
+                          onChange={(e) => updateSettings({ campaignPortfolioTitle: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 메인 헤드라인</label>
+                        <input
+                          type="text"
+                          value={settings.campaignPortfolioHeadline}
+                          onChange={(e) => updateSettings({ campaignPortfolioHeadline: e.target.value })}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 설명</label>
+                        <textarea
+                          value={settings.campaignPortfolioDescription}
+                          onChange={(e) => updateSettings({ campaignPortfolioDescription: e.target.value })}
+                          rows={2}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">서비스 섹션 이미지</h4>
+                    <div className="grid grid-cols-2 gap-6">
+                      {[
+                        { key: 'campaignService1Image', label: '서비스 1 (디지털 워크플로우)', sub: 'Server/Tech' },
+                        { key: 'campaignService2Image', label: '서비스 2 (영상 콘텐츠)', sub: 'Production/Film' },
+                        { key: 'campaignService3Image', label: '서비스 3 (현장 대응)', sub: 'Event/Live' },
+                        { key: 'campaignService4Image', label: '서비스 4 (브랜드 아이덴티티)', sub: 'Branding/Identity' }
+                      ].map((img, iIdx) => (
+                        <div key={img.key} className="space-y-2">
+                          <label className="flex items-center justify-between">
+                            <span className="text-[10px] text-white/40 font-bold uppercase">{img.label}</span>
+                            <span className="text-[9px] text-white/20 font-medium">{img.sub}</span>
+                          </label>
+                          <div className="relative group/service-img">
+                            <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
+                              {(settings as any)[img.key] ? (
+                                <img src={(settings as any)[img.key]} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-white/10" />
+                              )}
+                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/service-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                                <Upload className="w-5 h-5 text-white mb-1" />
+                                <span className="text-[9px] text-white font-bold">업로드</span>
+                                <input 
+                                  type="file" 
+                                  className="hidden" 
+                                  accept="image/*" 
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      if (file.size > 800 * 1024) {
+                                        alert('이미지 용량이 너무 큽니다 (800KB 이하 권장)');
+                                        return;
+                                      }
+                                      const reader = new FileReader();
+                                      reader.onload = () => updateSettings({ [img.key]: reader.result as string });
+                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }} 
+                                />
+                              </label>
+                              {(settings as any)[img.key] && (
+                                <button
+                                  onClick={() => updateSettings({ [img.key]: '' })}
+                                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover/service-img:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
               )}
             </div>
+          )}
+        </div>
 
-            <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
+        <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
               <p className="text-white/20 text-xs">
                 {activeTab === 'portfolio' ? `${portfolio.length}개의 포트폴리오` : 
                  activeTab === 'partners' ? `${partners.length}개의 협력사` :

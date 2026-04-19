@@ -1,7 +1,19 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Footer() {
   const [logoError, setLogoError] = useState(false);
+  const location = useLocation();
+
+  const handleLinkClick = (id: string) => {
+    if (location.pathname === '/') {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <footer className="bg-black text-white/40 py-12 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6">
@@ -23,10 +35,20 @@ export default function Footer() {
             <p className="text-xs">© 2015 Isaiah. All Rights Reserved.</p>
           </div>
 
-          <div className="flex space-x-8 text-xs tracking-widest uppercase">
-            <a href="#about" className="hover:text-amber-500 transition-colors">About</a>
-            <a href="#work" className="hover:text-amber-500 transition-colors">Works</a>
-            <a href="#contact" className="hover:text-amber-500 transition-colors">Contact</a>
+          <div className="flex space-x-8 text-xs tracking-widest uppercase items-center">
+            <Link 
+              to="/#about" 
+              onClick={() => handleLinkClick('about')}
+              className="hover:text-amber-500 transition-colors"
+            >
+              About
+            </Link>
+            <Link 
+              to="/campaign" 
+              className="hover:text-amber-500 transition-colors"
+            >
+              Campaign
+            </Link>
             <button 
               onClick={() => window.dispatchEvent(new CustomEvent('open-admin'))}
               className="hover:text-amber-500 transition-colors"

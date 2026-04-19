@@ -73,17 +73,24 @@ service cloud.firestore {
     }
 
     function hasRequiredPortfolioFields(data) {
-      return data.keys().hasAll(['title', 'category', 'videoUrl', 'order', 'createdAt']);
+      return data.keys().hasAll(['title', 'videoUrl', 'order', 'createdAt']);
     }
 
     function isValidPortfolio(data) {
       return (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
              (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('categories' in data) || (data.categories is list && data.categories.size() <= 10)) &&
              (!('thumbnail' in data) || (data.thumbnail is string && data.thumbnail.size() <= 1000000)) &&
              (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 100)) &&
              (!('info' in data) || (data.info is string && data.info.size() <= 500)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
              (!('order' in data) || data.order is number) &&
-             (!('createdAt' in data) || data.createdAt is number);
+             (!('createdAt' in data) || data.createdAt is number) &&
+             (!('section' in data) || (data.section in ['general', 'campaign-portfolio'])) &&
+             (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
+             (!('clientOrCandidate' in data) || (data.clientOrCandidate is string && data.clientOrCandidate.size() <= 100)) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 10)) &&
+             (!('sortOrder' in data) || data.sortOrder is number);
     }
 
     // ===============================================================
@@ -113,9 +120,8 @@ service cloud.firestore {
     // ===============================================================
     
     match /contacts/{contactId} {
-      allow create: if isValidContact(request.resource.data);
-      allow read, delete: if isAdmin();
-      allow update: if false;
+      allow create: if isValidContact(request.resource.data) && (!('isRead' in request.resource.data) || request.resource.data.isRead == false);
+      allow read, update, delete: if isAdmin();
     }
 
     function isValidContact(data) {
@@ -124,7 +130,8 @@ service cloud.firestore {
              isValidEmail(data.email) &&
              data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 20 &&
              data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
-             data.createdAt is number;
+             data.createdAt is number &&
+             (!('isRead' in data) || data.isRead is bool);
     }
 
     // ===============================================================
