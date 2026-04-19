@@ -47,7 +47,7 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
     <section id="process" className="py-32 bg-black text-white">
       <div className="max-w-7xl mx-auto px-6">
         {/* Vision Part */}
-        <div className="grid md:grid-cols-2 gap-12 mb-20">
+        <div className="grid md:grid-cols-2 gap-12 mb-5">
           <div>
             <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase">PROCESS</h4>
           </div>

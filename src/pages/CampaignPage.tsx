@@ -10,7 +10,11 @@ import {
   Layout, 
   ShieldCheck, 
   MessageSquare,
-  ChevronUp
+  ChevronUp,
+  PlayCircle,
+  Monitor,
+  Check,
+  Video
 } from 'lucide-react';
 import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { SiteSettings, PortfolioItem } from '@/src/types';
@@ -260,13 +264,16 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 transition={{ duration: 0.8 }}
                 className={cn("flex flex-col md:flex-row items-center gap-12 mb-32", service.reverse && "md:flex-row-reverse")}
               >
-                <div className="flex-1 space-y-6">
+                <div className={cn("flex-1 space-y-6", service.reverse && "md:text-right")}>
                   <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: service.reverse ? 20 : -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="flex items-center space-x-2 text-amber-500 font-bold text-xs uppercase tracking-widest"
+                    className={cn(
+                      "flex items-center space-x-2 text-amber-500 font-bold text-xs uppercase tracking-widest",
+                      service.reverse && "md:justify-end md:space-x-reverse"
+                    )}
                   >
                     <span className="w-8 h-px bg-amber-500" />
                     <span>Service {idx + 1}</span>
@@ -277,20 +284,23 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                   </div>
                   <div className="space-y-4">
                     <p className="text-xl font-medium text-white/80 break-keep">{service.subtitle}</p>
-                    <p className="text-white/40 leading-relaxed break-keep">{service.desc}</p>
+                    <p className="text-white/40 leading-relaxed break-keep ml-0 mr-0">{service.desc}</p>
                   </div>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6">
+                  <ul className={cn(
+                    "grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 pt-6", 
+                    service.reverse ? "md:ml-auto md:w-fit" : "md:mr-auto md:w-fit"
+                  )}>
                     {service.points.map((p, pIdx) => (
                       <motion.li 
                         key={pIdx} 
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={{ opacity: 0, x: service.reverse ? 10 : -10 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.3 + (pIdx * 0.1) }}
-                        className="flex items-center space-x-2 text-sm text-white/60"
+                        className="flex items-start space-x-2 text-sm text-white/60"
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        <span>{p}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                        <span className="break-keep">{p}</span>
                       </motion.li>
                     ))}
                   </ul>
@@ -310,8 +320,12 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
         </section>
 
         {/* 4. Deliverables Section */}
-        <section className="py-24 bg-neutral-900 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6">
+        <section className="py-24 bg-neutral-900 overflow-hidden relative">
+          {/* Subtle Background Pattern */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+               style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '40px 40px' }} />
+          
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <motion.div 
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -328,26 +342,38 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { main: '브랜딩', sub: 'Branding', items: ['Main Logo', 'Visual Identity', 'Color Guide'], icon: Layout },
-                { main: '영상', sub: 'Video', items: ['Branding Film', 'Short Contents', 'Sketch Video'], icon: Play },
-                { main: '디지털', sub: 'Digital', items: ['Channel Design', 'SNS Kit', 'Digital Assets'], icon: Layout },
-                { main: '현장', sub: 'Field', items: ['Live Streaming', 'On-site Editing', 'Live Motion'], icon: Users }
+                { main: '영상 콘텐츠', sub: 'Video', items: ['Branding Film', 'Short Contents', 'Sketch Video'], icon: Video },
+                { main: '디지털 자산', sub: 'Digital', items: ['Channel Design', 'SNS Kit', 'Platform Assets'], icon: Monitor },
+                { main: '현장 시스템', sub: 'Field', items: ['Live Streaming', 'On-site Editing', 'Live Motion'], icon: Zap }
               ].map((group, idx) => (
                 <motion.div 
                   key={idx} 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="bg-white/5 p-8 rounded-3xl border border-white/10 hover:border-amber-500/30 transition-all group"
+                  transition={{ duration: 0.6, delay: idx * 0.1 }}
+                  whileHover={{ y: -10 }}
+                  className="bg-white/[0.03] backdrop-blur-sm p-8 rounded-[2rem] border border-white/10 hover:border-amber-500/40 hover:bg-white/5 transition-all group relative overflow-hidden"
                 >
-                  <group.icon className="w-8 h-8 text-amber-500 mb-6 group-hover:scale-110 transition-transform" />
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold">{group.main}</h3>
-                    <p className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">{group.sub}</p>
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <group.icon className="w-24 h-24 -mr-8 -mt-8" />
                   </div>
-                  <div className="space-y-2">
+                  
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-6 border border-amber-500/20 group-hover:bg-amber-500 group-hover:border-amber-500 transition-all duration-500">
+                    <group.icon className="w-6 h-6 text-amber-500 group-hover:text-black transition-colors" />
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-lg font-bold group-hover:text-amber-500 transition-colors uppercase tracking-tight">{group.main}</h3>
+                    <p className="text-[10px] text-amber-500 font-bold uppercase tracking-[0.2em] opacity-60">{group.sub}</p>
+                  </div>
+
+                  <div className="space-y-3">
                     {group.items.map((item, iIdx) => (
-                      <div key={iIdx} className="text-xs text-white/40 font-medium">{item}</div>
+                      <div key={iIdx} className="flex items-center space-x-2">
+                        <Check className="w-3 h-3 text-amber-500/40 group-hover:text-amber-500 transition-colors" />
+                        <span className="text-[11px] text-white/40 font-medium group-hover:text-white/70 transition-colors">{item}</span>
+                      </div>
                     ))}
                   </div>
                 </motion.div>
@@ -378,13 +404,13 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             </motion.div>
 
             {/* Filter Tabs */}
-            <div className="flex flex-nowrap items-center justify-end gap-x-2 md:gap-x-6 mb-12 border-b border-white/10 overflow-x-auto whitespace-nowrap scrollbar-hide w-full pr-8">
+            <div className="flex flex-nowrap items-center justify-end gap-x-2 md:gap-x-3 mb-12 border-b border-white/10 overflow-x-auto whitespace-nowrap scrollbar-hide w-full pr-8">
               {TIER_CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveTier(cat.id)}
                   className={cn(
-                    "pb-3 px-3 text-xs font-bold tracking-wider transition-all relative uppercase shrink-0",
+                    "pb-3 px-1.5 text-xs font-bold tracking-wider transition-all relative uppercase shrink-0",
                     activeTier === cat.id ? "text-amber-500" : "text-white/40 hover:text-white"
                   )}
                 >
@@ -497,14 +523,28 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-6 gap-6 relative">
-              <div className="hidden md:block absolute top-[45px] left-[50px] right-[50px] h-px bg-white/5 z-0" />
+              <div className="hidden md:block absolute top-[40px] left-[8.33%] right-[8.33%] h-px bg-white/5 z-0" />
+              
+              {/* Moving Light Beam Effect */}
+              <div className="hidden md:block absolute top-[40px] left-[8.33%] right-[8.33%] h-[1px] z-0 overflow-hidden">
+                <motion.div 
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "400%" }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    ease: "linear" 
+                  }}
+                  className="w-1/4 h-full bg-gradient-to-r from-transparent via-amber-500 to-transparent"
+                />
+              </div>
               {[
-                { title: '메시지 분석', desc: '캠페인 목표와 키워드 도출', step: '01' },
-                { title: '후보 포지셔닝', desc: '비주얼 컨셉 및 이미지 설계', step: '02' },
-                { title: '콘텐츠 분류', desc: '매체별 맞춤형 제작 가이드', step: '03' },
-                { title: '현장 제작', desc: '시네마틱 촬영 및 라이브', step: '04' },
-                { title: '신속 편집', desc: '실시간 현장 편집 및 배포', step: '05' },
-                { title: '반응 분석', desc: '모니터링을 통한 전략 보완', step: '06' }
+                { title: '메시지 분석', desc: '캠페인 목표와 키워드 도출', step: '01', icon: Target },
+                { title: '후보 포지셔닝', desc: '비주얼 컨셉 및 이미지 설계', step: '02', icon: ShieldCheck },
+                { title: '콘텐츠 분류', desc: '매체별 맞춤형 제작 가이드', step: '03', icon: Layout },
+                { title: '현장 제작', desc: '시네마틱 촬영 및 라이브', step: '04', icon: PlayCircle },
+                { title: '신속 편집', desc: '실시간 현장 편집 및 배포', step: '05', icon: Zap },
+                { title: '반응 분석', desc: '모니터링을 통한 전략 보완', step: '06', icon: Users }
               ].map((item, idx) => (
                 <motion.div 
                   key={idx} 
@@ -512,14 +552,29 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="relative z-10 flex flex-col items-center text-center space-y-6"
+                  className="relative z-10 flex flex-col items-center text-center group"
                 >
-                  <div className="w-20 h-20 rounded-2.5xl bg-neutral-900 border border-white/10 flex items-center justify-center group hover:border-amber-500/50 transition-colors shadow-2xl">
-                    <span className="text-2xl font-black text-amber-500/20 group-hover:text-amber-500 transition-colors">{item.step}</span>
+                  {/* Step Hexagon/Circle Container */}
+                  <div className="w-20 h-20 rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center mb-6 relative transition-all duration-500 group-hover:border-amber-500/50 group-hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] shadow-2xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-2xl font-black text-white/10 group-hover:text-amber-500/20 absolute -right-2 -bottom-2 transition-all duration-500 blur-[1px]">
+                      {item.step}
+                    </span>
+                    <item.icon className="w-8 h-8 text-amber-500/40 group-hover:text-amber-500 transition-all duration-500 scale-90 group-hover:scale-110" />
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-base">{item.title}</h3>
-                    <p className="text-xs text-white/40 break-keep">{item.desc}</p>
+
+                  <div className="space-y-2 px-2">
+                    <div className="flex items-center justify-center space-x-2">
+                      <span className="text-[10px] font-black text-amber-500 tabular-nums bg-amber-500/10 px-1.5 py-0.5 rounded leading-none">
+                        {item.step}
+                      </span>
+                      <h3 className="font-bold text-sm tracking-tight group-hover:text-amber-500 transition-colors uppercase">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-white/40 break-keep leading-relaxed group-hover:text-white/60 transition-colors">
+                      {item.desc}
+                    </p>
                   </div>
                 </motion.div>
               ))}
@@ -532,12 +587,12 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://picsum.photos/seed/political-stage/1920/1080?blur=1" 
+              src="https://picsum.photos/seed/election-night/1920/1080?blur=1" 
               alt="Final CTA Background" 
-              className="w-full h-full object-cover opacity-40 grayscale"
+              className="w-full h-full object-cover opacity-30 grayscale"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-black" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black" />
           </div>
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] bg-amber-500/10 blur-[130px] rounded-full pointer-events-none z-0" />
