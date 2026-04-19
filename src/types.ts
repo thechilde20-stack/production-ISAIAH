@@ -15,7 +15,8 @@ export interface PortfolioItem {
   clientOrCandidate?: string;
   tags?: string[];
   sortOrder?: number;
-  campaignTier?: 'presidential-party' | 'national-local-election' | 'planned-campaign-film';
+  campaignTiers?: string[];
+  campaignTier?: string; // For backward compatibility
 }
 
 export interface ContactMessage {

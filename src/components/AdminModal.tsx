@@ -33,9 +33,9 @@ const MAIN_CATEGORIES = [
 ];
 
 const CAMPAIGN_TIERS = [
-  { value: 'presidential-party', label: '대선 및 당대표' },
-  { value: 'national-local-election', label: '총선 및 지방선거' },
-  { value: 'planned-campaign-film', label: '기획 영상' },
+  { value: 'presidential-party', label: '후보 브랜딩' },
+  { value: 'national-local-election', label: '선거 캠페인' },
+  { value: 'planned-campaign-film', label: '전략 기획 캠페인' },
 ];
 
 function PortfolioItemRow({ 
@@ -72,7 +72,7 @@ function PortfolioItemRow({
   const [localYear, setLocalYear] = useState(item.year || '');
   const [localClient, setLocalClient] = useState(item.clientOrCandidate || '');
   const [localTags, setLocalTags] = useState<string[]>(item.tags || []);
-  const [localTier, setLocalTier] = useState(item.campaignTier || '');
+  const [localTiers, setLocalTiers] = useState<string[]>(item.campaignTiers || (item.campaignTier ? [item.campaignTier] : []));
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -87,7 +87,9 @@ function PortfolioItemRow({
   useEffect(() => { setLocalYear(item.year || ''); }, [item.year]);
   useEffect(() => { setLocalClient(item.clientOrCandidate || ''); }, [item.clientOrCandidate]);
   useEffect(() => { setLocalTags(item.tags || []); }, [item.tags]);
-  useEffect(() => { setLocalTier(item.campaignTier || ''); }, [item.campaignTier]);
+  useEffect(() => { 
+    setLocalTiers(item.campaignTiers || (item.campaignTier ? [item.campaignTier] : [])); 
+  }, [item.campaignTiers, item.campaignTier]);
 
   const handleBlur = (field: string, value: string) => {
     let finalValue = value;
@@ -234,7 +236,7 @@ function PortfolioItemRow({
 
         <input
           type="text"
-          value={localTitle}
+          value={localTitle || ''}
           onChange={(e) => setLocalTitle(e.target.value)}
           onBlur={(e) => handleBlur('title', e.target.value)}
           placeholder="영상 제목"
@@ -242,7 +244,7 @@ function PortfolioItemRow({
         />
         <input
           type="text"
-          value={localVideoUrl}
+          value={localVideoUrl || ''}
           onChange={(e) => setLocalVideoUrl(e.target.value)}
           onBlur={(e) => handleBlur('videoUrl', e.target.value)}
           placeholder="URL 또는 ID"
@@ -252,7 +254,7 @@ function PortfolioItemRow({
         {localSection === 'campaign-portfolio' ? (
           <>
             <textarea
-              value={localInfo}
+              value={localInfo || ''}
               onChange={(e) => setLocalInfo(e.target.value)}
               onBlur={(e) => handleBlur('info', e.target.value)}
               placeholder="상세 정보 (연도, 클라이언트, 설명 등)"
@@ -260,19 +262,22 @@ function PortfolioItemRow({
               className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2 resize-none"
             />
             <div className="col-span-2 space-y-2">
-              <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (필수)</label>
+              <label className="text-[10px] text-white/40 font-bold uppercase block mb-1">카테고리 선택 (중복 가능)</label>
               <div className="flex flex-wrap gap-2">
                 {CAMPAIGN_TIERS.map((tier) => (
                   <button
                     key={tier.value}
                     type="button"
                     onClick={() => {
-                      setLocalTier(tier.value as any);
-                      onUpdate(item.id, { campaignTier: tier.value as any });
+                      const newTiers = localTiers.includes(tier.value)
+                        ? localTiers.filter(t => t !== tier.value)
+                        : [...localTiers, tier.value];
+                      setLocalTiers(newTiers);
+                      onUpdate(item.id, { campaignTiers: newTiers });
                     }}
                     className={cn(
                       "py-1.5 px-4 rounded-lg text-[10px] font-bold transition-all border",
-                      localTier === tier.value 
+                      localTiers.includes(tier.value) 
                         ? "bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/20" 
                         : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
                     )}
@@ -287,7 +292,7 @@ function PortfolioItemRow({
           <>
             <input
               type="text"
-              value={localInfo}
+              value={localInfo || ''}
               onChange={(e) => setLocalInfo(e.target.value)}
               onBlur={(e) => handleBlur('info', e.target.value)}
               placeholder="상세 정보 (클라이언트, 설명 등)"
@@ -498,7 +503,7 @@ function PartnerRow({
       <div className="flex-1">
         <input
           type="text"
-          value={localName}
+          value={localName || ''}
           onChange={(e) => setLocalName(e.target.value)}
           onBlur={(e) => handleBlur('name', e.target.value)}
           placeholder="기관명"
@@ -510,7 +515,7 @@ function PartnerRow({
         <label className="flex items-center space-x-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={partner.isFeatured}
+            checked={!!partner.isFeatured}
             onChange={(e) => onUpdate(partner.id, { isFeatured: e.target.checked })}
             className="w-4 h-4 accent-amber-500"
           />
@@ -1016,7 +1021,8 @@ export default function AdminModal() {
       section: isCampaign ? 'campaign-portfolio' : 'general',
       year: isCampaign ? new Date().getFullYear().toString() : '',
       clientOrCandidate: '',
-      tags: isCampaign ? ['선거'] : []
+      tags: isCampaign ? ['선거'] : [],
+      campaignTiers: isCampaign ? ['presidential-party'] : []
     };
     try {
       await addDoc(collection(db, 'portfolio'), newItem);
@@ -1064,9 +1070,13 @@ export default function AdminModal() {
 
   const updateSettings = async (updates: Partial<SiteSettings>) => {
     try {
-      await setDoc(doc(db, 'settings', 'main'), { ...settings, ...updates }, { merge: true });
-      // Clear cache to ensure changes are visible on refresh
+      // Clear cache locally first
       localStorage.removeItem('isaiah_site_data');
+      
+      const settingsRef = doc(db, 'settings', 'main');
+      // Use setDoc with merge: true but ONLY pass the delta (updates)
+      // This prevents stale state in the local 'settings' object from overwriting concurrent changes
+      await setDoc(settingsRef, updates, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'settings/main');
     }
@@ -1172,7 +1182,7 @@ export default function AdminModal() {
               <div className="relative">
                 <input
                   type="password"
-                  value={password}
+                  value={password || ''}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
                   className={cn(
@@ -1508,7 +1518,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">메인 영상 (YouTube ID)</label>
                         <input
                           type="text"
-                          value={settings.heroVideoId}
+                          value={settings.heroVideoId || ''}
                           onChange={(e) => updateSettings({ heroVideoId: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1516,7 +1526,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">메인 헤드라인</label>
                         <textarea
-                          value={settings.heroHeadline}
+                          value={settings.heroHeadline || ''}
                           onChange={(e) => updateSettings({ heroHeadline: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1526,7 +1536,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">서브카피</label>
                         <input
                           type="text"
-                          value={settings.heroSubcopy}
+                          value={settings.heroSubcopy || ''}
                           onChange={(e) => updateSettings({ heroSubcopy: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1534,7 +1544,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">회사 소개 짧은 문구</label>
                         <textarea
-                          value={settings.heroDescription}
+                          value={settings.heroDescription || ''}
                           onChange={(e) => updateSettings({ heroDescription: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1648,7 +1658,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">페이지 Title</label>
                         <input
                           type="text"
-                          value={settings.siteTitle}
+                          value={settings.siteTitle || ''}
                           onChange={(e) => updateSettings({ siteTitle: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1656,7 +1666,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">Meta Description</label>
                         <textarea
-                          value={settings.metaDescription}
+                          value={settings.metaDescription || ''}
                           onChange={(e) => updateSettings({ metaDescription: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1665,7 +1675,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">OpenGraph Description</label>
                         <textarea
-                          value={settings.ogDescription}
+                          value={settings.ogDescription || ''}
                           onChange={(e) => updateSettings({ ogDescription: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1675,7 +1685,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">대표 키워드 (쉼표로 구분)</label>
                         <input
                           type="text"
-                          value={settings.keywords}
+                          value={settings.keywords || ''}
                           onChange={(e) => updateSettings({ keywords: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1785,13 +1795,13 @@ export default function AdminModal() {
                         <div className="flex space-x-2">
                           <input
                             type="color"
-                            value={settings.accentColor}
+                            value={settings.accentColor || '#f59e0b'}
                             onChange={(e) => updateSettings({ accentColor: e.target.value })}
                             className="w-12 h-12 bg-transparent border-none cursor-pointer"
                           />
                           <input
                             type="text"
-                            value={settings.accentColor}
+                            value={settings.accentColor || ''}
                             onChange={(e) => updateSettings({ accentColor: e.target.value })}
                             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                           />
@@ -1815,13 +1825,13 @@ export default function AdminModal() {
               ) : (
                 <div className="space-y-12">
                   <section className="space-y-6">
-                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">Hero 섹션 문구 및 미디어</h4>
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">캠페인 히어로 섹션 설정</h4>
                     <div className="grid gap-4">
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 영상 (YouTube ID)</label>
                         <input
                           type="text"
-                          value={settings.campaignHeroVideoId}
+                          value={settings.campaignHeroVideoId || ''}
                           onChange={(e) => updateSettings({ campaignHeroVideoId: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                           placeholder="영상 ID가 있는 경우 배경 이미지 대신 재생됩니다."
@@ -1830,7 +1840,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 메인 헤드라인</label>
                         <textarea
-                          value={settings.campaignHeroHeadline}
+                          value={settings.campaignHeroHeadline || ''}
                           onChange={(e) => updateSettings({ campaignHeroHeadline: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1840,7 +1850,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">캠페인 Hero 태그 (쉼표로 구분)</label>
                         <input
                           type="text"
-                          value={settings.campaignHeroSubcopy}
+                          value={settings.campaignHeroSubcopy || ''}
                           onChange={(e) => updateSettings({ campaignHeroSubcopy: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1848,7 +1858,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">캠페인 페이지 설명</label>
                         <textarea
-                          value={settings.campaignHeroDescription}
+                          value={settings.campaignHeroDescription || ''}
                           onChange={(e) => updateSettings({ campaignHeroDescription: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1858,13 +1868,13 @@ export default function AdminModal() {
                   </section>
 
                   <section className="space-y-6">
-                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">포트폴리오 섹션 문구</h4>
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">캠페인 포트폴리오 섹션 설정</h4>
                     <div className="grid gap-4">
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 소제목 (라벨)</label>
                         <input
                           type="text"
-                          value={settings.campaignPortfolioTitle}
+                          value={settings.campaignPortfolioTitle || ''}
                           onChange={(e) => updateSettings({ campaignPortfolioTitle: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1873,7 +1883,7 @@ export default function AdminModal() {
                         <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 메인 헤드라인</label>
                         <input
                           type="text"
-                          value={settings.campaignPortfolioHeadline}
+                          value={settings.campaignPortfolioHeadline || ''}
                           onChange={(e) => updateSettings({ campaignPortfolioHeadline: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         />
@@ -1881,7 +1891,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">포트폴리오 섹션 설명</label>
                         <textarea
-                          value={settings.campaignPortfolioDescription}
+                          value={settings.campaignPortfolioDescription || ''}
                           onChange={(e) => updateSettings({ campaignPortfolioDescription: e.target.value })}
                           rows={2}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 resize-none"
@@ -1891,7 +1901,7 @@ export default function AdminModal() {
                   </section>
 
                   <section className="space-y-6">
-                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">서비스 섹션 이미지</h4>
+                    <h4 className="text-amber-500 font-bold tracking-widest text-xs uppercase">캠페인 서비스 섹션 이미지</h4>
                     <div className="grid grid-cols-2 gap-6">
                       {[
                         { key: 'campaignService1Image', label: '서비스 1 (디지털 워크플로우)', sub: 'Server/Tech' },

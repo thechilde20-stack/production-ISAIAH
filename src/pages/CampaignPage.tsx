@@ -31,16 +31,16 @@ interface CampaignPageProps {
 }
 
 const TIER_CATEGORIES = [
-  { id: 'presidential-party', label: '대선 및 당대표' },
-  { id: 'national-local-election', label: '총선 및 지방선거' },
-  { id: 'planned-campaign-film', label: '기획 영상' },
+  { id: 'presidential-party', label: '후보 브랜딩' },
+  { id: 'national-local-election', label: '선거 캠페인' },
+  { id: 'planned-campaign-film', label: '전략 기획 캠페인' },
   { id: 'ALL', label: 'ALL' },
 ];
 
 const TIER_META: Record<string, { label: string; icon: any }> = {
-  'presidential-party': { label: '대선 및 당대표', icon: ShieldCheck },
-  'national-local-election': { label: '총선 및 지방선거', icon: Users },
-  'planned-campaign-film': { label: '기획 영상', icon: Zap },
+  'presidential-party': { label: '후보 브랜딩', icon: ShieldCheck },
+  'national-local-election': { label: '선거 캠페인', icon: Users },
+  'planned-campaign-film': { label: '전략 기획 캠페인', icon: Zap },
 };
 
 export default function CampaignPage({ settings, portfolio, isLoaded }: CampaignPageProps) {
@@ -57,7 +57,10 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
 
   const filteredPortfolio = activeTier === 'ALL'
     ? campaignPortfolio
-    : campaignPortfolio.filter(item => item.campaignTier === activeTier);
+    : campaignPortfolio.filter(item => 
+        (item.campaignTiers && item.campaignTiers.includes(activeTier)) || 
+        item.campaignTier === activeTier
+      );
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -75,7 +78,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
     <div className="min-h-screen bg-black text-white font-primary selection:bg-amber-500 selection:text-black">
       <main>
         {/* 1. Hero Section */}
-        <section className="relative h-[90vh] w-full overflow-hidden flex items-center justify-center bg-black pt-20">
+        <section className="relative h-[90vh] w-full overflow-hidden flex items-end justify-end bg-black pb-24 md:pb-32">
           {/* Video Background */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] h-[115%] min-w-full min-h-full">
@@ -83,6 +86,8 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 key={campaignVideoId}
                 videoId={campaignVideoId}
                 opts={{
+                  width: '100%',
+                  height: '100%',
                   playerVars: {
                     autoplay: 1,
                     controls: 0,
@@ -94,6 +99,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                     modestbranding: 1,
                     playsinline: 1,
                     start: 0,
+                    origin: typeof window !== 'undefined' ? window.location.origin : '',
                   },
                 }}
                 className="w-full h-full object-cover"
@@ -107,9 +113,9 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
           </div>
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-          <div className="relative z-10 max-w-7xl mx-auto px-6 text-center md:text-right w-full">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 text-right w-full">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -127,7 +133,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-3xl md:text-5xl font-bold tracking-tighter leading-[1.1] mb-8 break-keep bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-300 whitespace-pre-line text-right"
+              className="text-3xl md:text-5xl font-bold tracking-tighter leading-[1.25] mb-8 break-keep bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-300 whitespace-pre-line text-right"
             >
               {settings?.campaignHeroHeadline || "선거는 초단위의 속도전,\n메시지는 영상이 될 때 힘을 가집니다."}
             </motion.h1>
@@ -136,7 +142,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-white/60 text-lg md:text-xl max-w-3xl ml-auto mb-12 leading-relaxed break-keep whitespace-pre-line text-right"
+              className="text-white/60 text-lg md:text-xl max-w-3xl ml-auto mb-4 leading-relaxed break-keep whitespace-pre-line text-right"
             >
               {settings?.campaignHeroDescription || "기획, 촬영, 편집, 현장 대응, 라이브, 브랜딩까지\n후보와 캠프의 철학을 유권자에게 전달하는 캠페인 미디어 통합 솔루션"}
             </motion.p>
@@ -165,7 +171,9 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               className="mb-16 text-left"
             >
               <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase">Why Isaiah</h4>
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter">압도적 경험이 완성하는 캠페인의 결과</h2>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter leading-snug md:leading-[1.2]">
+                압도적 경험이 완성하는<br className="hidden md:block" /> <span className="text-amber-500">캠페인</span>의 결과
+              </h2>
             </motion.div>
 
             <div className="grid md:grid-cols-4 gap-6">
@@ -225,14 +233,14 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 main: '디지털 워크플로우 & 인프라',
                 sub: 'Digital Workflow & Infrastructure',
                 subtitle: '선거는 초단위의 속도전, 정보 유실 없는 실시간 협업 체계를 구축합니다.',
-                desc: '정적이고 뻔한 선거 영상에서 벗어나, 현장 촬영팀·편집팀·공보팀이 하나의 시스템 안에서 실시간으로 연결됩니다. 데이터 이중화와 아카이빙으로 선거 기간 중 발생할 수 있는 모든 사고를 차단합니다.',
+                desc: '정적이고 뻔한 캠페인 영상에서 벗어나, 현장 촬영팀·편집팀·공보팀이 하나의 시스템 안에서 실시간으로 연결됩니다. 데이터 이중화와 아카이빙으로 선거 기간 중 발생할 수 있는 모든 사고를 차단합니다.',
                 points: ['Real-time NAS Media Server', 'Data Redundancy & Archiving'],
                 image: settings?.campaignService1Image || 'https://picsum.photos/seed/server-infrastructure/800/600'
               },
               {
-                main: '영상 콘텐츠 제작',
+                main: '미디어 콘텐츠 제작',
                 sub: 'Storytelling & Quality',
-                subtitle: '유권자의 마음을 움직이는 고품격 영상을 제작합니다.',
+                subtitle: '유권자의 마음을 움직이는 고품격 미디어 콘텐츠을 제작합니다.',
                 desc: '후보의 삶과 소신을 한 편의 영화처럼 담아내는 서사 영상부터, 인문학적 소양에서 미래 비전으로 이어지는 3단계 숏폼 시리즈까지. Sony FX3 등 4K 전문 장비와 시네마틱 사운드로 타 캠프와 차별화된 압도적 품질을 보장합니다.',
                 points: ['정치 인생 서사 영상', 'Strategic Shorts', 'Cinematic Sound Mixing'],
                 image: settings?.campaignService2Image || 'https://picsum.photos/seed/cinematic-production/800/600',
@@ -287,8 +295,8 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                     <p className="text-white/40 leading-relaxed break-keep ml-0 mr-0">{service.desc}</p>
                   </div>
                   <ul className={cn(
-                    "grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 pt-6", 
-                    service.reverse ? "md:ml-auto md:w-fit" : "md:mr-auto md:w-fit"
+                    "grid grid-cols-1 sm:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-3 pt-6 w-full md:w-fit", 
+                    service.reverse ? "md:ml-auto" : "md:mr-auto"
                   )}>
                     {service.points.map((p, pIdx) => (
                       <motion.li 
@@ -297,10 +305,10 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.3 + (pIdx * 0.1) }}
-                        className="flex items-start space-x-2 text-sm text-white/60"
+                        className="flex items-start space-x-3 text-sm text-white/60 text-left"
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
-                        <span className="break-keep">{p}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-2" />
+                        <span className="break-keep leading-relaxed">{p}</span>
                       </motion.li>
                     ))}
                   </ul>
@@ -335,7 +343,9 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             >
               <div>
                 <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase text-xs">Deliverables</h4>
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter">캠페인의 모든 접점을 아우르는 전문 미디어 결과물</h2>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter leading-snug md:leading-[1.2]">
+                  모든 접점을 아우르는<br className="hidden md:block" /> 전문 미디어 결과물
+                </h2>
               </div>
             </motion.div>
 
@@ -395,8 +405,8 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase text-xs">
                 {settings?.campaignPortfolioTitle || "Portfolio Selection"}
               </h4>
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4 whitespace-pre-line">
-                {settings?.campaignPortfolioHeadline || "입증된 결과로 말하는 캠페인 미디어 레코드"}
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4 whitespace-pre-line leading-snug md:leading-[1.2]">
+                {settings?.campaignPortfolioHeadline || "입증된 결과로 말하는\n캠페인 미디어 레코드"}
               </h2>
               <p className="text-white/40 max-w-2xl text-sm leading-relaxed break-keep whitespace-pre-line">
                 {settings?.campaignPortfolioDescription || "단순 나열이 아닌, 체급별 분류를 통해 캠페인 수행 경험과 메시지 설계 역량을 보여줍니다."}
@@ -450,12 +460,18 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                     {/* Hover Overlay - Based on main site concept */}
                     <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center p-6 text-center backdrop-blur-[2px]">
                       {/* Tier Tag - Top Left (Matches main site category style) */}
-                      {item.campaignTier && TIER_META[item.campaignTier] && (
+                      {((item.campaignTiers && item.campaignTiers.length > 0) || item.campaignTier) && (
                         <div 
-                          className="absolute top-6 left-6 inline-flex items-center space-x-1.5 text-amber-500 z-10 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 delay-100"
+                          className="absolute top-6 left-6 flex flex-col items-start space-y-1 z-10 -translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 delay-100"
                         >
-                          {React.createElement(TIER_META[item.campaignTier].icon, { className: "w-3 h-3" })}
-                          <span className="text-[10px] font-light tracking-tight uppercase">{TIER_META[item.campaignTier].label}</span>
+                          {(item.campaignTiers || [item.campaignTier]).filter(Boolean).map((tierId, tIdx) => (
+                            tierId && TIER_META[tierId] && (
+                              <div key={tIdx} className="inline-flex items-center space-x-1.5 text-amber-500 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
+                                {React.createElement(TIER_META[tierId].icon, { className: "w-3 h-3" })}
+                                <span className="text-[10px] font-light tracking-tight uppercase">{TIER_META[tierId].label}</span>
+                              </div>
+                            )
+                          ))}
                         </div>
                       )}
 
@@ -516,7 +532,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               className="mb-16 text-left"
             >
               <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase text-xs">Workflow</h4>
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4">격렬한 캠페인 현장에서 작동하는 완벽한 프로세스</h2>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4 leading-snug md:leading-[1.2]">격렬한 현장에서 작동하는<br className="hidden md:block" /> 완벽한 프로세스</h2>
               <p className="text-white/40 max-w-2xl text-sm leading-relaxed">
                 속도가 생명인 캠페인 미디어 환경에 최적화된 프로덕션 이사야만의 제작 워크플로우를 소개합니다.
               </p>
@@ -604,7 +620,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               viewport={{ once: true }}
               className="text-3xl md:text-5xl font-bold tracking-tighter leading-tight mb-8 break-keep bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400"
             >
-              후보의 메시지가 분명할수록<br />
+              메시지가 분명할수록<br />
               <span className="text-amber-500">캠페인은 더 멀리 갑니다.</span>
             </motion.h2>
             <motion.p 

@@ -1,15 +1,18 @@
 import YouTube from 'react-youtube';
 import { motion } from 'motion/react';
 import { SiteSettings } from '../types';
+import { extractYoutubeId } from '../lib/utils';
 
 interface HeroProps {
   settings: SiteSettings | null;
 }
 
 export default function Hero({ settings }: HeroProps) {
-  const videoId = settings?.heroVideoId || 'U46x9TtmO40';
+  const videoId = extractYoutubeId(settings?.heroVideoId || 'U46x9TtmO40');
 
   const opts = {
+    width: '100%',
+    height: '100%',
     playerVars: {
       autoplay: 1,
       controls: 0,
@@ -21,6 +24,7 @@ export default function Hero({ settings }: HeroProps) {
       modestbranding: 1,
       playsinline: 1,
       start: 0,
+      origin: typeof window !== 'undefined' ? window.location.origin : '',
     },
   };
 

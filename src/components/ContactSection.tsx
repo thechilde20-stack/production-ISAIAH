@@ -104,7 +104,7 @@ export default function ContactSection() {
                   placeholder="이름"
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-6 py-4 focus:outline-none focus:border-amber-500 transition-colors"
-                  value={formData.name}
+                  value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
                 <input
@@ -112,7 +112,7 @@ export default function ContactSection() {
                   placeholder="이메일"
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-6 py-4 focus:outline-none focus:border-amber-500 transition-colors"
-                  value={formData.email}
+                  value={formData.email || ''}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
@@ -121,7 +121,7 @@ export default function ContactSection() {
                 placeholder="전화번호"
                 required
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-6 py-4 focus:outline-none focus:border-amber-500 transition-colors"
-                value={formData.phone}
+                value={formData.phone || ''}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
               <textarea
@@ -129,7 +129,7 @@ export default function ContactSection() {
                 required
                 rows={6}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-6 py-4 focus:outline-none focus:border-amber-500 transition-colors resize-none"
-                value={formData.message}
+                value={formData.message || ''}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               />
               
