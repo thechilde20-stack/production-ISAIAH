@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
+import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical, Zap } from 'lucide-react';
 import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
@@ -1810,7 +1810,7 @@ export default function AdminModal() {
                       <div className="space-y-2">
                         <label className="text-xs text-white/40 font-bold uppercase">대표 폰트</label>
                         <select
-                          value={settings.primaryFont}
+                          value={settings.primaryFont || 'NanumSquareNeo'}
                           onChange={(e) => updateSettings({ primaryFont: e.target.value as any })}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
                         >

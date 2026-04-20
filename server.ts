@@ -89,10 +89,10 @@ async function startServer() {
                     ${tag.trim()}
                 </span>`).join('')}
             </div>
-            <h1 class="text-3xl md:text-5xl font-bold tracking-tighter leading-[1.3] mb-8 break-keep gradient-text whitespace-pre-line uppercase">
+            <h1 class="text-2xl md:text-4xl font-bold tracking-tighter leading-[1.6] mb-8 break-keep gradient-text whitespace-pre-line uppercase">
                 ${(settings.campaignHeroHeadline || '선거는 초단위의 속도전,\n메시지는 영상이 될 때 힘을 가집니다.').replace(/\n/g, '<br>')}
             </h1>
-            <p class="text-white/60 text-lg md:text-xl max-w-3xl ml-auto mb-4 leading-relaxed break-keep whitespace-pre-line">
+            <p class="text-white/60 text-lg md:text-xl max-w-3xl ml-auto mb-4 leading-[1.8] break-keep whitespace-pre-line">
                 ${(settings.campaignHeroDescription || '기획, 촬영, 편집, 현장 대응, 라이브, 브랜딩까지\n후보와 캠프의 철학을 유권자에게 전달하는 캠페인 미디어 통합 솔루션').replace(/\n/g, '<br>')}
             </p>
         </div>
@@ -278,9 +278,19 @@ ${message}
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve("dist");
+    
+    // 캠페인 페이지 직접 접속 대응 (독립형 파일 우선 순위)
+    app.get(["/campaign", "/campaign/"], (req, res) => {
+      const campaignPath = path.join(distPath, "campaign", "index.html");
+      if (fs.existsSync(campaignPath)) {
+        res.sendFile(campaignPath);
+      } else {
+        res.sendFile(path.join(distPath, "index.html"));
+      }
+    });
+
     app.use(express.static(distPath));
     
-    // Support direct access to /campaign and other routes
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
