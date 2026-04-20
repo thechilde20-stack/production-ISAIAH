@@ -1,59 +1,44 @@
-# Production Isaiah - Self Hosting Guide (Asustor Server)
+# Production Isaiah - Deployment Guide
 
-이 프로젝트를 개인 서버(Asustor 등)에 배포하기 위한 가이드입니다.
+이 프로젝트는 **GitHub -> GitHub Actions -> NAS(정적 파일)** 구조로 배포되는 정적 웹 애플리케이션입니다.
 
-## 1. 사전 준비
-- **Node.js**: 서버에 Node.js (v18 이상 권장, v22.6+ 권장)가 설치되어 있어야 합니다.
-- **Firebase**: Firebase 콘솔에서 프로젝트가 설정되어 있어야 합니다.
-- **Gmail App Password**: 문의 메일 전송을 위해 Gmail 앱 비밀번호가 필요합니다.
+## 1. 아키텍처 개요
+- **Frontend**: Vite + React (SPA)
+- **Database/Storage**: Firebase (Firestore & Storage)
+- **Deployment**: 
+  1. GitHub에 코드 푸시
+  2. GitHub Actions에서 `npm run build` 수행
+  3. 생성된 `dist` 폴더의 정적 파일들을 NAS 호스팅 경로로 전송
+  4. Nginx 등 웹 서버를 통해 정적 파일 서빙
 
-## 2. 설치 및 설정
-1. 전체 파일을 서버의 원하는 디렉토리에 업로드합니다.
-2. 터미널에서 해당 디렉토리로 이동하여 의존성을 설치합니다:
+## 2. 사전 준비
+- **Firebase**: Firebase Console에서 프로젝트 설정 및 `firebase-applet-config.json` 준비.
+- **NAS/Hosting**: `dist` 폴더의 내용을 호스팅할 웹 서버 환경.
+
+## 3. 설정 (Environment Variables)
+`.env` 파일에 필요한 정보를 입력합니다 (`.env.example` 참고):
+```env
+# 관리자 인증 설정
+VITE_ADMIN_EMAIL=thechilde77@gmail.com
+VITE_ADMIN_PASSWORD=5882
+```
+
+## 4. 빌드 및 배포
+1. **의존성 설치**:
    ```bash
    npm install
    ```
-3. `.env` 파일을 생성하고 필요한 정보를 입력합니다 (`.env.example` 참고):
-   ```env
-   # 이메일 발송 설정
-   EMAIL_USER=your-gmail@gmail.com
-   EMAIL_PASS=your-app-password
-
-   # 관리자 인증 설정 (기본값 사용 가능)
-   VITE_ADMIN_EMAIL=thechilde77@gmail.com
-   VITE_ADMIN_PASSWORD=5882
-
-   # 서버 포트 (기본값 3000)
-   PORT=3000
-   ```
-
-## 3. 빌드 및 실행
-통합 코드 방식으로, 프론트엔드를 빌드한 후 서버를 실행합니다.
-
-1. **프론트엔드 빌드**:
+2. **정적 파일 빌드**:
    ```bash
    npm run build
    ```
-   이 명령은 `dist` 폴더를 생성합니다.
+3. 생성된 `dist` 디렉토리 내의 모든 파일을 서버의 웹 루트 디렉토리로 업로드합니다.
 
-2. **서버 실행**:
-   ```bash
-   npm start
-   ```
-   이제 `http://서버IP:3000`으로 접속 가능합니다.
+## 5. 관리자 메뉴 (Admin Menu)
+관리자 메뉴는 클라이언트 브라우저에서 직접 Firebase Firestore와 통신하여 데이터를 관리합니다.
+- 사이트 설정, 포트폴리오, 협력사, 메시지 등 모든 데이터는 실시간으로 Firebase에 저장됩니다.
+- 별도의 서버 측 빌드 프로세스 없이, 저장된 데이터는 각 페이지 접속 시 브라우저에서 동적으로 불러와 렌더링됩니다.
 
-## 4. 관리자 메뉴 (Admin Menu) 주의사항
-관리자 메뉴가 정상적으로 작동하려면 다음 설정을 확인하세요:
-
-1. **Firebase 승인된 도메인**:
-   - Firebase 콘솔 > Authentication > Settings > Authorized domains
-   - 서버의 IP 주소 또는 도메인을 추가해야 Google 로그인이 작동합니다.
-2. **HTTPS 권장**:
-   - Google 로그인은 보안상 HTTPS 환경에서 가장 잘 작동합니다. IP로 접속 시 브라우저 정책에 따라 팝업이 차단되거나 오류가 날 수 있습니다.
-3. **환경 변수**:
-   - `VITE_ADMIN_EMAIL`과 `VITE_ADMIN_PASSWORD`가 `.env`에 정확히 입력되었는지 확인하세요.
-
-## 5. 문제 해결 (Troubleshooting)
-- **메일 전송 실패**: Gmail 설정에서 '앱 비밀번호'를 사용했는지 확인하세요.
-- **관리자 로그인 오류**: 브라우저 콘솔(F12)을 확인하여 `auth/unauthorized-domain` 에러가 뜨는지 확인하세요.
-- **포트 충돌**: Asustor의 다른 서비스가 3000번 포트를 사용 중이라면 `.env`에서 `PORT`를 변경하세요.
+## 6. 주의사항
+- **SPA 라우팅**: Nginx 등 웹 서버 설정에서 모든 요청을 `index.html`로 보내도록 설정해야 라우팅(예: `/portfolio`, `/campaign`)이 정상 작동합니다.
+- **Firebase 승인된 도메인**: Firebase Console > Authentication > Settings에 배포 도메인을 반드시 추가해야 합니다.

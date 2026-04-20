@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical, Zap } from 'lucide-react';
+import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
 import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
@@ -1957,73 +1957,6 @@ export default function AdminModal() {
                       ))}
                     </div>
                   </section>
-
-                  {/* Deployment Controls */}
-                  <div className="pt-8 border-t border-white/10 mt-8 mb-12">
-                    <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-6">
-                      <h4 className="text-amber-500 font-bold text-sm mb-2 flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        독립형 페이지 배포 (Standalone Deployment)
-                      </h4>
-                      <p className="text-white/60 text-xs mb-6 break-keep leading-relaxed">
-                        캠페인 페이지를 독립된 <strong>index.html</strong> 파일로 생성합니다. 모든 리소스는 상대 경로로 처리되며 스타일과 스크립트가 인라인화되어 단일 파일로 배포가 가능합니다. 완료 시 <code className="bg-white/10 px-1 rounded">/campaign/index.html</code> 경로로 접근 가능합니다.
-                      </p>
-                      
-                      <button
-                        onClick={async () => {
-                          const btn = document.getElementById('build-standalone-btn') as HTMLButtonElement;
-                          if (!btn) return;
-                          
-                          btn.disabled = true;
-                          const originalText = btn.innerHTML;
-                          btn.innerHTML = '<span class="animate-pulse">생성 중...</span>';
-                          
-                          console.log('[Build] Starting standalone page generation...');
-                          const controller = new AbortController();
-                          const timeoutId = setTimeout(() => controller.abort(), 120000); // 2분 타임아웃
-                          
-                          try {
-                            btn.innerHTML = '<span>서버에 요청 중...</span>';
-                            console.log('[Build] Sending build trigger to server...');
-                            
-                            const response = await fetch('/api/admin/build-standalone-campaign', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ trigger: true }),
-                              signal: controller.signal
-                            });
-                            
-                            btn.innerHTML = '<span>응답 처리 중...</span>';
-                            
-                            if (!response.ok) {
-                              const errorText = await response.text();
-                              console.error('[Build] Server error response:', errorText);
-                              throw new Error(`서버 오류 (${response.status}): ${errorText.substring(0, 100)}`);
-                            }
-
-                            clearTimeout(timeoutId);
-                            console.log('[Build] Request completed. Parsing response...');
-                            const result = await response.json();
-                            if (response.ok) {
-                              alert(`성공: 독립형 캠페인 페이지가 생성되었습니다.\n경로: ${result.path}`);
-                            } else {
-                              alert(`실패: ${result.error || '알 수 없는 오류'}`);
-                            }
-                          } catch (e) {
-                            alert('오류 발생: ' + (e as Error).message);
-                          } finally {
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
-                          }
-                        }}
-                        id="build-standalone-btn"
-                        className="bg-amber-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-amber-400 transition-all flex items-center justify-center space-x-2"
-                      >
-                        <Zap className="w-4 h-4 fill-current" />
-                        <span>독립형 index.html 업데이트</span>
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
