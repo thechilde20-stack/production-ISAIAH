@@ -84,9 +84,21 @@ export default function App() {
 
         // 1. Fetch Settings
         let fetchedSettings: SiteSettings | null = null;
-        const settingsSnap = await getDoc(doc(db, 'settings', 'main'));
+        const [settingsSnap, campaignSnap] = await Promise.all([
+          getDoc(doc(db, 'settings', 'main')),
+          getDoc(doc(db, 'settings', 'campaign'))
+        ]);
+        
+        let settingsData = {};
         if (settingsSnap.exists()) {
-          fetchedSettings = settingsSnap.data() as SiteSettings;
+          settingsData = { ...settingsData, ...settingsSnap.data() };
+        }
+        if (campaignSnap.exists()) {
+          settingsData = { ...settingsData, ...campaignSnap.data() };
+        }
+        
+        if (Object.keys(settingsData).length > 0) {
+          fetchedSettings = settingsData as SiteSettings;
           setSettings(fetchedSettings);
           applyGlobalStyles(fetchedSettings);
         }

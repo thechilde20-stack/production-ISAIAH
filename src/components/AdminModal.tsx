@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
 import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
-import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
+import { storage, db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, writeBatch, setDoc, getDocs, where } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
@@ -253,11 +254,27 @@ function PortfolioItemRow({
         
         {localSection === 'campaign-portfolio' ? (
           <>
+            <input
+              type="text"
+              value={localYear || ''}
+              onChange={(e) => setLocalYear(e.target.value)}
+              onBlur={(e) => handleBlur('year', e.target.value)}
+              placeholder="연도 (예: 2024)"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+            />
+            <input
+              type="text"
+              value={localClient || ''}
+              onChange={(e) => setLocalClient(e.target.value)}
+              onBlur={(e) => handleBlur('clientOrCandidate', e.target.value)}
+              placeholder="클라이언트 또는 후보자명"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+            />
             <textarea
               value={localInfo || ''}
               onChange={(e) => setLocalInfo(e.target.value)}
               onBlur={(e) => handleBlur('info', e.target.value)}
-              placeholder="상세 정보 (연도, 클라이언트, 설명 등)"
+              placeholder="프로젝트 상세 설명 (롤오버 시 표시)"
               rows={2}
               className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 col-span-2 resize-none"
             />
@@ -653,6 +670,7 @@ export default function AdminModal() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [uploadingSettings, setUploadingSettings] = useState<Record<string, boolean>>({});
   const [settings, setSettings] = useState<SiteSettings>({
     heroVideoId: 'U46x9TtmO40',
     heroHeadline: '사람의 마음을 움직이고,\n브랜드 메세지는 선명하게!',
@@ -741,17 +759,24 @@ export default function AdminModal() {
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'contacts'));
 
     // Listen to Settings
-    const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'main'), (snapshot) => {
+    const unsubscribeSettingsMain = onSnapshot(doc(db, 'settings', 'main'), (snapshot) => {
       if (snapshot.exists()) {
-        setSettings(snapshot.data() as SiteSettings);
+        setSettings(prev => ({ ...prev, ...snapshot.data() as SiteSettings }));
       }
     }, (err) => handleFirestoreError(err, OperationType.GET, 'settings/main'));
+
+    const unsubscribeSettingsCampaign = onSnapshot(doc(db, 'settings', 'campaign'), (snapshot) => {
+      if (snapshot.exists()) {
+        setSettings(prev => ({ ...prev, ...snapshot.data() as SiteSettings }));
+      }
+    }, (err) => handleFirestoreError(err, OperationType.GET, 'settings/campaign'));
 
     return () => {
       unsubscribePartners();
       unsubscribePortfolio();
       unsubscribeMessages();
-      unsubscribeSettings();
+      unsubscribeSettingsMain();
+      unsubscribeSettingsCampaign();
     };
   }, [isLoggedIn, isOpen]);
 
@@ -1073,12 +1098,122 @@ export default function AdminModal() {
       // Clear cache locally first
       localStorage.removeItem('isaiah_site_data');
       
-      const settingsRef = doc(db, 'settings', 'main');
-      // Use setDoc with merge: true but ONLY pass the delta (updates)
-      // This prevents stale state in the local 'settings' object from overwriting concurrent changes
-      await setDoc(settingsRef, updates, { merge: true });
+      // Determine which document to update
+      const campaignKeys = [
+        'campaignHeroVideoId', 'campaignHeroImageUrl', 'campaignHeroHeadline', 
+        'campaignHeroSubcopy', 'campaignHeroDescription', 'campaignPortfolioTitle', 
+        'campaignPortfolioHeadline', 'campaignPortfolioDescription', 
+        'campaignService1Image', 'campaignService2Image', 'campaignService3Image', 'campaignService4Image'
+      ];
+      
+      const containsCampaignKey = Object.keys(updates).some(key => campaignKeys.includes(key));
+      const docId = containsCampaignKey ? 'campaign' : 'main';
+      
+      const settingsRef = doc(db, 'settings', docId);
+      
+      // Update local state first for instant feedback
+      setSettings(prev => ({ ...prev, ...updates }));
+      
+      await updateDoc(settingsRef, updates);
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'settings/main');
+      console.error('updateSettings error:', err);
+      // Fallback to setDoc if updateDoc fails (e.g., document doesn't exist)
+      try {
+        const docId = Object.keys(updates).some(key => [
+          'campaignHeroVideoId', 'campaignHeroImageUrl', 'campaignHeroHeadline', 
+          'campaignHeroSubcopy', 'campaignHeroDescription', 'campaignPortfolioTitle', 
+          'campaignPortfolioHeadline', 'campaignPortfolioDescription', 
+          'campaignService1Image', 'campaignService2Image', 'campaignService3Image', 'campaignService4Image'
+        ].includes(key)) ? 'campaign' : 'main';
+        
+        const settingsRef = doc(db, 'settings', docId);
+        await setDoc(settingsRef, updates, { merge: true });
+      } catch (innerErr) {
+        handleFirestoreError(innerErr, OperationType.UPDATE, 'settings/update');
+      }
+    }
+  };
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200; // 가로 최대 1200px로 제한
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Canvas context failed');
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          // 용량을 줄이기 위해 jpeg 0.7 품질로 압축
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const uploadSettingImage = async (key: string, file: File) => {
+    setUploadingSettings(prev => ({ ...prev, [key]: true }));
+    try {
+      console.log(`[Upload] Processing ${key}...`);
+      
+      // 1. 이미지 압축 및 리사이징 (파일 크기 및 차원 최적화)
+      const compressedBase64 = await compressImage(file);
+      console.log(`[Upload] Image compressed. Size: ${(compressedBase64.length / 1024).toFixed(1)}KB`);
+
+      // 2. 비동기 시도 로직 (Storage와 Firestore 병렬 검토)
+      const attemptStorage = async () => {
+        const filePath = `settings/${key}_${Date.now()}`;
+        const storageRef = ref(storage, filePath);
+        
+        // CORS 오류로 인해 무한 대기하는 것을 방지하기 위해 타임아웃 적용 (5초)
+        const uploadPromise = uploadBytes(storageRef, file);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Storage Timeout')), 5000)
+        );
+
+        return Promise.race([uploadPromise, timeoutPromise]) as Promise<any>;
+      };
+
+      try {
+        console.log(`[Storage] Attempting Storage upload with 5s timeout...`);
+        await attemptStorage();
+        const filePath = `settings/${key}_${Date.now()}`; // 위에서 생성한 것과 동일한 규칙
+        const storageRef = ref(storage, filePath);
+        const url = await getDownloadURL(storageRef);
+        
+        console.log('[Storage] Success:', url);
+        await updateSettings({ [key]: url });
+      } catch (err: any) {
+        // [CORS 차단 또는 타임아웃 발생 시] 즉시 Firestore 직접 저장으로 전환
+        console.error('[Storage] Failed or Timed out. Error:', err.message);
+        console.log('[Firestore] Switching to direct DB storage (Bypass CORS)');
+        
+        // Firestore에 직접 Base64 데이터 저장 (압축되었으므로 안전함)
+        await updateSettings({ [key]: compressedBase64 });
+        console.log('[Firestore] Direct storage successful');
+      }
+      
+    } catch (err: any) {
+      console.error('[Upload] Fatal Error:', err);
+      alert('업로드 중 예상치 못한 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
+    } finally {
+      setUploadingSettings(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -1563,31 +1698,31 @@ export default function AdminModal() {
                         </label>
                         <div className="relative group/about-img">
                           <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
-                            {settings.aboutImageUrl ? (
+                            {uploadingSettings['aboutImageUrl'] ? (
+                              <div className="flex flex-col items-center space-y-2">
+                                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                                <span className="text-[10px] text-white/40 tracking-widest font-bold">UPLOADING...</span>
+                              </div>
+                            ) : settings.aboutImageUrl ? (
                               <img src={settings.aboutImageUrl} alt="About" className="w-full h-full object-cover" />
                             ) : (
                               <ImageIcon className="w-8 h-8 text-white/10" />
                             )}
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/about-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                            <label className={cn(
+                              "absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center cursor-pointer",
+                              uploadingSettings['aboutImageUrl'] ? "opacity-100 pointer-events-none" : "opacity-0 group-hover/about-img:opacity-100"
+                            )}>
                               <Upload className="w-6 h-6 text-white mb-1" />
                               <span className="text-[10px] text-white font-bold">업로드</span>
                               <input 
                                 type="file" 
                                 className="hidden" 
                                 accept="image/*" 
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) {
-                                    if (file.size > 1024 * 1024) {
-                                      alert('이미지 용량이 너무 큽니다 (1MB 이하 권장)');
-                                      return;
-                                    }
-                                    const reader = new FileReader();
-                                    reader.onload = () => updateSettings({ aboutImageUrl: reader.result as string });
-                                    reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-                                    reader.readAsDataURL(file);
-                                  }
+                                  if (file) uploadSettingImage('aboutImageUrl', file);
                                 }} 
+                                disabled={uploadingSettings['aboutImageUrl']}
                               />
                             </label>
                             {settings.aboutImageUrl && (
@@ -1609,31 +1744,31 @@ export default function AdminModal() {
                         </label>
                         <div className="relative group/process-img">
                           <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
-                            {settings.processImageUrl ? (
+                            {uploadingSettings['processImageUrl'] ? (
+                              <div className="flex flex-col items-center space-y-2">
+                                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                                <span className="text-[10px] text-white/40 tracking-widest font-bold">UPLOADING...</span>
+                              </div>
+                            ) : settings.processImageUrl ? (
                               <img src={settings.processImageUrl} alt="Process" className="w-full h-full object-cover" />
                             ) : (
                               <ImageIcon className="w-8 h-8 text-white/10" />
                             )}
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/process-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                            <label className={cn(
+                              "absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center cursor-pointer",
+                              uploadingSettings['processImageUrl'] ? "opacity-100 pointer-events-none" : "opacity-0 group-hover/process-img:opacity-100"
+                            )}>
                               <Upload className="w-6 h-6 text-white mb-1" />
                               <span className="text-[10px] text-white font-bold">업로드</span>
                               <input 
                                 type="file" 
                                 className="hidden" 
                                 accept="image/*" 
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const file = e.target.files?.[0];
-                                  if (file) {
-                                    if (file.size > 1024 * 1024) {
-                                      alert('이미지 용량이 너무 큽니다 (1MB 이하 권장)');
-                                      return;
-                                    }
-                                    const reader = new FileReader();
-                                    reader.onload = () => updateSettings({ processImageUrl: reader.result as string });
-                                    reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-                                    reader.readAsDataURL(file);
-                                  }
+                                  if (file) uploadSettingImage('processImageUrl', file);
                                 }} 
+                                disabled={uploadingSettings['processImageUrl']}
                               />
                             </label>
                             {settings.processImageUrl && (
@@ -1698,34 +1833,34 @@ export default function AdminModal() {
                           </label>
                           <div className="relative group/seo">
                             <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
-                              {settings.ogImage ? (
+                              {uploadingSettings['ogImage'] ? (
+                                <div className="flex flex-col items-center space-y-2">
+                                  <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                                  <span className="text-[10px] text-white/40 tracking-widest font-bold">UPLOADING...</span>
+                                </div>
+                              ) : settings.ogImage ? (
                                 <img src={settings.ogImage} alt="OG" className="w-full h-full object-cover" />
                               ) : (
                                 <ImageIcon className="w-8 h-8 text-white/10" />
                               )}
-                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/seo:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                              <label className={cn(
+                                "absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center cursor-pointer",
+                                uploadingSettings['ogImage'] ? "opacity-100 pointer-events-none" : "opacity-0 group-hover/seo:opacity-100"
+                              )}>
                                 <Upload className="w-6 h-6 text-white mb-1" />
                                 <span className="text-[10px] text-white font-bold">업로드</span>
                                 <input 
                                   type="file" 
                                   className="hidden" 
                                   accept="image/*" 
-                                  onChange={async (e) => {
+                                  onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) {
-                                      if (file.size > 800 * 1024) {
-                                        alert('이미지 용량이 너무 큽니다 (800KB 이하 권장)');
-                                        return;
-                                      }
-                                      const reader = new FileReader();
-                                      reader.onload = () => updateSettings({ ogImage: reader.result as string });
-                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-                                      reader.readAsDataURL(file);
-                                    }
+                                    if (file) uploadSettingImage('ogImage', file);
                                   }} 
+                                  disabled={uploadingSettings['ogImage']}
                                 />
                               </label>
-                              {settings.ogImage && (
+                              {settings.ogImage && !uploadingSettings['ogImage'] && (
                                 <button
                                   onClick={() => updateSettings({ ogImage: '' })}
                                   className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover/seo:opacity-100 transition-opacity hover:bg-red-600 z-20"
@@ -1744,34 +1879,31 @@ export default function AdminModal() {
                           </label>
                           <div className="relative group/favicon">
                             <div className="w-24 h-24 bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
-                              {settings.favicon ? (
+                              {uploadingSettings['favicon'] ? (
+                                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                              ) : settings.favicon ? (
                                 <img src={settings.favicon} alt="Favicon" className="w-16 h-16 object-contain" />
                               ) : (
                                 <ImageIcon className="w-8 h-8 text-white/10" />
                               )}
-                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/favicon:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                              <label className={cn(
+                                "absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center cursor-pointer",
+                                uploadingSettings['favicon'] ? "opacity-100 pointer-events-none" : "opacity-0 group-hover/favicon:opacity-100"
+                              )}>
                                 <Upload className="w-6 h-6 text-white mb-1" />
                                 <span className="text-[10px] text-white font-bold">업로드</span>
                                 <input 
                                   type="file" 
                                   className="hidden" 
                                   accept="image/*" 
-                                  onChange={async (e) => {
+                                  onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) {
-                                      if (file.size > 200 * 1024) {
-                                        alert('파비콘 용량이 너무 큽니다 (200KB 이하 권장)');
-                                        return;
-                                      }
-                                      const reader = new FileReader();
-                                      reader.onload = () => updateSettings({ favicon: reader.result as string });
-                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-                                      reader.readAsDataURL(file);
-                                    }
+                                    if (file) uploadSettingImage('favicon', file);
                                   }} 
+                                  disabled={uploadingSettings['favicon']}
                                 />
                               </label>
-                              {settings.favicon && (
+                              {settings.favicon && !uploadingSettings['favicon'] && (
                                 <button
                                   onClick={() => updateSettings({ favicon: '' })}
                                   className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover/favicon:opacity-100 transition-opacity hover:bg-red-600 z-20"
@@ -1916,34 +2048,34 @@ export default function AdminModal() {
                           </label>
                           <div className="relative group/service-img">
                             <div className="w-full aspect-video bg-black border border-white/10 rounded-xl overflow-hidden flex items-center justify-center">
-                              {(settings as any)[img.key] ? (
+                              {uploadingSettings[img.key] ? (
+                                <div className="flex flex-col items-center space-y-2">
+                                  <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                                  <span className="text-[8px] text-white/40 tracking-widest font-bold">UPLOADING...</span>
+                                </div>
+                              ) : (settings as any)[img.key] ? (
                                 <img src={(settings as any)[img.key]} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <ImageIcon className="w-8 h-8 text-white/10" />
                               )}
-                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/service-img:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                              <label className={cn(
+                                "absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center cursor-pointer",
+                                uploadingSettings[img.key] ? "opacity-100 pointer-events-none" : "opacity-0 group-hover/service-img:opacity-100"
+                              )}>
                                 <Upload className="w-5 h-5 text-white mb-1" />
                                 <span className="text-[9px] text-white font-bold">업로드</span>
                                 <input 
                                   type="file" 
                                   className="hidden" 
                                   accept="image/*" 
-                                  onChange={async (e) => {
+                                  onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) {
-                                      if (file.size > 800 * 1024) {
-                                        alert('이미지 용량이 너무 큽니다 (800KB 이하 권장)');
-                                        return;
-                                      }
-                                      const reader = new FileReader();
-                                      reader.onload = () => updateSettings({ [img.key]: reader.result as string });
-                                      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-                                      reader.readAsDataURL(file);
-                                    }
+                                    if (file) uploadSettingImage(img.key, file);
                                   }} 
+                                  disabled={uploadingSettings[img.key]}
                                 />
                               </label>
-                              {(settings as any)[img.key] && (
+                              {(settings as any)[img.key] && !uploadingSettings[img.key] && (
                                 <button
                                   onClick={() => updateSettings({ [img.key]: '' })}
                                   className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover/service-img:opacity-100 transition-opacity hover:bg-red-600 z-20"

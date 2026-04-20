@@ -235,7 +235,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 subtitle: '선거는 초단위의 속도전, 정보 유실 없는 실시간 협업 체계를 구축합니다.',
                 desc: '정적이고 뻔한 캠페인 영상에서 벗어나, 현장 촬영팀·편집팀·공보팀이 하나의 시스템 안에서 실시간으로 연결됩니다. 데이터 이중화와 아카이빙으로 선거 기간 중 발생할 수 있는 모든 사고를 차단합니다.',
                 points: ['Real-time NAS Media Server', 'Data Redundancy & Archiving'],
-                image: settings?.campaignService1Image || 'https://picsum.photos/seed/server-infrastructure/800/600'
+                image: settings?.campaignService1Image || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?auto=format&fit=crop&q=80&w=800'
               },
               {
                 main: '미디어 콘텐츠 제작',
@@ -243,7 +243,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 subtitle: '유권자의 마음을 움직이는 고품격 미디어 콘텐츠을 제작합니다.',
                 desc: '후보의 삶과 소신을 한 편의 영화처럼 담아내는 서사 영상부터, 인문학적 소양에서 미래 비전으로 이어지는 3단계 숏폼 시리즈까지. Sony FX3 등 4K 전문 장비와 시네마틱 사운드로 타 캠프와 차별화된 압도적 품질을 보장합니다.',
                 points: ['정치 인생 서사 영상', 'Strategic Shorts', 'Cinematic Sound Mixing'],
-                image: settings?.campaignService2Image || 'https://picsum.photos/seed/cinematic-production/800/600',
+                image: settings?.campaignService2Image || 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=800',
                 reverse: true
               },
               {
@@ -252,7 +252,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 subtitle: '현장의 열기를 실시간으로 전달하며 어떤 상황에서도 유연하게 대응합니다.',
                 desc: '출정식, 토론회, 타운홀 미팅 등 주요 행사를 방송국 수준으로 생중계합니다. 방송 작가 출신 베테랑들이 기획부터 현장 연출까지 전담하며, 전국 단위 기동 촬영과 긴밀한 협업 네트워크를 유지합니다.',
                 points: ['Multi-cam Live Streaming', '전국 기동 촬영', 'Emergency Response'],
-                image: settings?.campaignService3Image || 'https://picsum.photos/seed/political-event/800/600'
+                image: settings?.campaignService3Image || 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&q=80&w=800'
               },
               {
                 main: '브랜드 아이덴티티',
@@ -260,7 +260,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                 subtitle: '후보의 철학을 시각화하여 유권자에게 일관되고 강력한 메시지를 전달합니다.',
                 desc: '단순 영상 제작에 그치지 않고, 후보의 공식 채널을 하나의 미디어 브랜드로 완성합니다. 빅데이터 분석 기반의 SEO 전략과 썸네일·타이틀 최적화로 노출 효과를 극대화합니다.',
                 points: ['Channel Identity & Branding', '슬로건 및 공보물 디자인', 'SEO & Growth Strategy'],
-                image: settings?.campaignService4Image || 'https://picsum.photos/seed/brand-identity/800/600',
+                image: settings?.campaignService4Image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800',
                 reverse: true
               }
             ].map((service, idx) => (
@@ -475,24 +475,30 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                         </div>
                       )}
 
-                      <div className="space-y-3 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-200">
-                        <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                          <Play className="w-6 h-6 text-black fill-current ml-1" />
-                        </div>
-                        
-                        <h4 className="text-xl font-bold leading-tight break-keep">{item.title}</h4>
-                        
-                        <div className="flex flex-col space-y-1 text-sm text-white/60">
-                          <span className="font-medium text-amber-500/80 uppercase tracking-wider break-keep">
-                            {item.year || ''}{item.year && item.clientOrCandidate ? ' | ' : ''}{item.clientOrCandidate || ''}
-                          </span>
-                          {(item.description || item.info) && (
-                            <p className="text-xs text-white/40 max-w-[240px] mx-auto leading-relaxed break-keep mt-2">
-                              {item.description || item.info}
-                            </p>
+                        <div className="space-y-3 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-200">
+                          {/* Only show Play icon if it's a video (it has a youtube ID) */}
+                          {item.videoUrl && (
+                            <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                              <Play className="w-6 h-6 text-black fill-current ml-1" />
+                            </div>
                           )}
+                          
+                          {item.title && <h4 className="text-xl font-bold leading-tight break-keep">{item.title}</h4>}
+                          
+                          <div className="flex flex-col space-y-1 text-sm text-white/60">
+                            {(item.year || item.clientOrCandidate) && (
+                              <span className="font-medium text-amber-500/80 uppercase tracking-wider break-keep">
+                                {item.year}{item.year && item.clientOrCandidate ? ' | ' : ''}{item.clientOrCandidate}
+                              </span>
+                            )}
+                            
+                            {(item.description || item.info) && (
+                              <p className="text-xs text-white/40 max-w-[240px] mx-auto leading-relaxed break-keep mt-2">
+                                {item.description || item.info}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
                     </div>
                   </motion.div>
                 ))}
