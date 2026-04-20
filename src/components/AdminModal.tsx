@@ -1978,13 +1978,33 @@ export default function AdminModal() {
                           const originalText = btn.innerHTML;
                           btn.innerHTML = '<span class="animate-pulse">생성 중...</span>';
                           
+                          console.log('[Build] Starting standalone page generation...');
+                          const controller = new AbortController();
+                          const timeoutId = setTimeout(() => controller.abort(), 120000); // 2분 타임아웃
+                          
                           try {
+                            btn.innerHTML = '<span>데이터 준비 중...</span>';
+                            console.log('[Build] Serializing data...');
+                            const body = JSON.stringify({ settings, portfolio });
+                            const sizeMB = (body.length / (1024 * 1024)).toFixed(2);
+                            console.log(`[Build] Data serialized. Size: ${sizeMB} MB. Sending request...`);
+                            
+                            if (parseFloat(sizeMB) > 10) {
+                              btn.innerHTML = `<span>업로드 중 (${sizeMB}MB)...</span>`;
+                            } else {
+                              btn.innerHTML = '<span>생성 중...</span>';
+                            }
+                            
                             const response = await fetch('/api/admin/build-standalone-campaign', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ settings, portfolio })
+                              body: body,
+                              signal: controller.signal
                             });
                             
+                            btn.innerHTML = '<span>파일 저장 중...</span>';
+                            clearTimeout(timeoutId);
+                            console.log('[Build] Request completed. Parsing response...');
                             const result = await response.json();
                             if (response.ok) {
                               alert(`성공: 독립형 캠페인 페이지가 생성되었습니다.\n경로: ${result.path}`);

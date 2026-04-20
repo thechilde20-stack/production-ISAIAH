@@ -20,12 +20,23 @@ async function startServer() {
 
   // API Route for building standalone campaign page
   app.post("/api/admin/build-standalone-campaign", async (req, res) => {
+    console.log("[Build] Received request to build standalone campaign page");
     const { settings, portfolio } = req.body;
     
+    if (!settings || !portfolio) {
+      console.error("[Build] Missing settings or portfolio data");
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    console.log(`[Build] Data size: settings=${JSON.stringify(settings).length} bytes, portfolio count=${portfolio.length}`);
+    
     try {
+      console.time("build-process");
       const campaignPortfolio = portfolio
         .filter((item: any) => item.section === 'campaign-portfolio')
         .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+      console.log(`[Build] Filtered campaign portfolio count: ${campaignPortfolio.length}`);
 
       const extractYoutubeId = (url: string) => {
         if (!url) return '';
@@ -36,6 +47,7 @@ async function startServer() {
 
       const heroVideoId = extractYoutubeId(settings.campaignHeroVideoId || '0BKvOfTyLmU');
 
+      console.log("[Build] Generating HTML template...");
       // Comprehensive HTML Template for Standalone Campaign Page
       const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -209,22 +221,27 @@ async function startServer() {
 </body>
 </html>`;
 
+      console.log(`[Build] Writing HTML to public/campaign (Length: ${html.length} characters)`);
       const campaignDir = path.resolve("public", "campaign");
       if (!fs.existsSync(campaignDir)) {
-        fs.mkdirSync(campaignDir, { recursive: true });
+        await fs.promises.mkdir(campaignDir, { recursive: true });
       }
-      fs.writeFileSync(path.join(campaignDir, "index.html"), html);
+      await fs.promises.writeFile(path.join(campaignDir, "index.html"), html);
 
       // Also write to dist if in production
+      console.log("[Build] Writing HTML to dist/campaign if exists");
       const distDir = path.resolve("dist", "campaign");
       if (fs.existsSync(path.resolve("dist"))) {
-        if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true });
-        fs.writeFileSync(path.join(distDir, "index.html"), html);
+        if (!fs.existsSync(distDir)) await fs.promises.mkdir(distDir, { recursive: true });
+        await fs.promises.writeFile(path.join(distDir, "index.html"), html);
       }
 
+      console.timeEnd("build-process");
+      console.log("[Build] Standalone campaign page built successfully");
       res.status(200).json({ success: true, path: "/campaign/index.html" });
     } catch (error) {
-      console.error("Build standalone error:", error);
+      console.timeEnd("build-process");
+      console.error("[Build] Build standalone error:", error);
       res.status(500).json({ error: (error as Error).message });
     }
   });
