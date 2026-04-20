@@ -1983,26 +1983,24 @@ export default function AdminModal() {
                           const timeoutId = setTimeout(() => controller.abort(), 120000); // 2분 타임아웃
                           
                           try {
-                            btn.innerHTML = '<span>데이터 준비 중...</span>';
-                            console.log('[Build] Serializing data...');
-                            const body = JSON.stringify({ settings, portfolio });
-                            const sizeMB = (body.length / (1024 * 1024)).toFixed(2);
-                            console.log(`[Build] Data serialized. Size: ${sizeMB} MB. Sending request...`);
-                            
-                            if (parseFloat(sizeMB) > 10) {
-                              btn.innerHTML = `<span>업로드 중 (${sizeMB}MB)...</span>`;
-                            } else {
-                              btn.innerHTML = '<span>생성 중...</span>';
-                            }
+                            btn.innerHTML = '<span>서버에 요청 중...</span>';
+                            console.log('[Build] Sending build trigger to server...');
                             
                             const response = await fetch('/api/admin/build-standalone-campaign', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: body,
+                              body: JSON.stringify({ trigger: true }),
                               signal: controller.signal
                             });
                             
-                            btn.innerHTML = '<span>파일 저장 중...</span>';
+                            btn.innerHTML = '<span>응답 처리 중...</span>';
+                            
+                            if (!response.ok) {
+                              const errorText = await response.text();
+                              console.error('[Build] Server error response:', errorText);
+                              throw new Error(`서버 오류 (${response.status}): ${errorText.substring(0, 100)}`);
+                            }
+
                             clearTimeout(timeoutId);
                             console.log('[Build] Request completed. Parsing response...');
                             const result = await response.json();

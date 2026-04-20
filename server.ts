@@ -4,8 +4,16 @@ import path from "path";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import fs from "fs";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, collection, getDocs } from "firebase/firestore";
 
 dotenv.config();
+
+// Initialize Firebase for server-side data fetching
+const firebaseConfigPath = path.resolve("firebase-applet-config.json");
+const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf-8"));
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 async function startServer() {
   const app = express();
@@ -21,17 +29,21 @@ async function startServer() {
   // API Route for building standalone campaign page
   app.post("/api/admin/build-standalone-campaign", async (req, res) => {
     console.log("[Build] Received request to build standalone campaign page");
-    const { settings, portfolio } = req.body;
-    
-    if (!settings || !portfolio) {
-      console.error("[Build] Missing settings or portfolio data");
-      return res.status(400).json({ error: "Missing data" });
-    }
-
-    console.log(`[Build] Data size: settings=${JSON.stringify(settings).length} bytes, portfolio count=${portfolio.length}`);
     
     try {
       console.time("build-process");
+      
+      // Fetch data directly from Firestore to avoid large POST body issues
+      console.log("[Build] Fetching settings from Firestore...");
+      const settingsDoc = await getDoc(doc(db, "settings", "main"));
+      const settings = settingsDoc.exists() ? settingsDoc.data() : {};
+      
+      console.log("[Build] Fetching portfolio from Firestore...");
+      const portSnapshot = await getDocs(collection(db, "portfolio"));
+      const portfolio = portSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      console.log(`[Build] Data fetched. Settings entries: ${Object.keys(settings).length}, Portfolio count: ${portfolio.length}`);
+
       const campaignPortfolio = portfolio
         .filter((item: any) => item.section === 'campaign-portfolio')
         .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
