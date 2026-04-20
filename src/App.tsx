@@ -84,17 +84,20 @@ export default function App() {
 
         // 1. Fetch Settings
         let fetchedSettings: SiteSettings | null = null;
-        const [settingsSnap, campaignSnap] = await Promise.all([
+        let fetchedPortfolio: PortfolioItem[] = [];
+        let fetchedPartners: Partner[] = [];
+
+        const [settingsSnapResult, campaignSnapResult] = await Promise.allSettled([
           getDoc(doc(db, 'settings', 'main')),
           getDoc(doc(db, 'settings', 'campaign'))
         ]);
         
         let settingsData = {};
-        if (settingsSnap.exists()) {
-          settingsData = { ...settingsData, ...settingsSnap.data() };
+        if (settingsSnapResult.status === 'fulfilled' && settingsSnapResult.value.exists()) {
+          settingsData = { ...settingsData, ...settingsSnapResult.value.data() };
         }
-        if (campaignSnap.exists()) {
-          settingsData = { ...settingsData, ...campaignSnap.data() };
+        if (campaignSnapResult.status === 'fulfilled' && campaignSnapResult.value.exists()) {
+          settingsData = { ...settingsData, ...campaignSnapResult.value.data() };
         }
         
         if (Object.keys(settingsData).length > 0) {
@@ -104,14 +107,22 @@ export default function App() {
         }
 
         // 2. Fetch Portfolio
-        const portfolioSnap = await getDocs(query(collection(db, 'portfolio'), orderBy('order', 'asc')));
-        const fetchedPortfolio = portfolioSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioItem));
-        setPortfolio(fetchedPortfolio);
+        try {
+          const portfolioSnap = await getDocs(query(collection(db, 'portfolio'), orderBy('order', 'asc')));
+          fetchedPortfolio = portfolioSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioItem));
+          setPortfolio(fetchedPortfolio);
+        } catch (err) {
+          console.error("Portfolio fetch failed:", err);
+        }
 
         // 3. Fetch Partners
-        const partnersSnap = await getDocs(query(collection(db, 'partners'), orderBy('order', 'asc')));
-        const fetchedPartners = partnersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Partner));
-        setPartners(fetchedPartners);
+        try {
+          const partnersSnap = await getDocs(query(collection(db, 'partners'), orderBy('order', 'asc')));
+          fetchedPartners = partnersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Partner));
+          setPartners(fetchedPartners);
+        } catch (err) {
+          console.error("Partners fetch failed:", err);
+        }
 
         // Save to cache
         localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -121,7 +132,8 @@ export default function App() {
 
         setIsDataLoaded(true);
       } catch (error) {
-        console.error("Error fetching initial data:", error);
+        console.error("Critical error in fetchAllData:", error);
+        setIsDataLoaded(true);
       }
     };
 
@@ -157,7 +169,7 @@ export default function App() {
         }
       }
 
-      document.documentElement.style.setProperty('--accent-color', data.accentColor);
+      document.documentElement.style.setProperty('--accent-color', data.accentColor || '#f59e0b'); // Default to amber-500
       document.documentElement.style.setProperty('--primary-font', 
         data.primaryFont === 'NanumSquareNeo' ? '"NanumSquareNeo", sans-serif' :
         data.primaryFont === 'NotoSansKR' ? '"Noto Sans KR", sans-serif' :
