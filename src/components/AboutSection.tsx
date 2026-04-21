@@ -72,7 +72,7 @@ export default function AboutSection({ settings }: AboutSectionProps) {
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="aspect-[3/5] rounded-3xl overflow-hidden shadow-2xl max-w-sm ml-auto">
+            <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl max-w-sm ml-auto">
               <img 
                 src={aboutImg}
                 alt="Professional studio film production" 

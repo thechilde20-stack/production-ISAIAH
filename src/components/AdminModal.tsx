@@ -70,7 +70,6 @@ function PortfolioItemRow({
   const [localCategories, setLocalCategories] = useState<string[]>(item.categories || (item.category ? [item.category] : []));
   const [localThumbnail, setLocalThumbnail] = useState(item.thumbnail || '');
   const [localSection, setLocalSection] = useState(item.section || 'general');
-  const [localYear, setLocalYear] = useState(item.year || '');
   const [localClient, setLocalClient] = useState(item.clientOrCandidate || '');
   const [localTags, setLocalTags] = useState<string[]>(item.tags || []);
   const [localTiers, setLocalTiers] = useState<string[]>(item.campaignTiers || (item.campaignTier ? [item.campaignTier] : []));
@@ -85,7 +84,6 @@ function PortfolioItemRow({
   }, [item.categories, item.category]);
   useEffect(() => { setLocalThumbnail(item.thumbnail || ''); }, [item.thumbnail]);
   useEffect(() => { setLocalSection(item.section || 'general'); }, [item.section]);
-  useEffect(() => { setLocalYear(item.year || ''); }, [item.year]);
   useEffect(() => { setLocalClient(item.clientOrCandidate || ''); }, [item.clientOrCandidate]);
   useEffect(() => { setLocalTags(item.tags || []); }, [item.tags]);
   useEffect(() => { 
@@ -254,14 +252,6 @@ function PortfolioItemRow({
         
         {localSection === 'campaign-portfolio' ? (
           <>
-            <input
-              type="text"
-              value={localYear || ''}
-              onChange={(e) => setLocalYear(e.target.value)}
-              onBlur={(e) => handleBlur('year', e.target.value)}
-              placeholder="연도 (예: 2024)"
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-            />
             <input
               type="text"
               value={localClient || ''}
@@ -1044,7 +1034,6 @@ export default function AdminModal() {
       order: minOrder - 1,
       createdAt: Date.now(),
       section: isCampaign ? 'campaign-portfolio' : 'general',
-      year: isCampaign ? new Date().getFullYear().toString() : '',
       clientOrCandidate: '',
       tags: isCampaign ? ['선거'] : [],
       campaignTiers: isCampaign ? ['presidential-party'] : []

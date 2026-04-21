@@ -124,11 +124,19 @@ export default function App() {
           console.error("Partners fetch failed:", err);
         }
 
-        // Save to cache
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          data: { settings: fetchedSettings, portfolio: fetchedPortfolio, partners: fetchedPartners },
-          timestamp: Date.now()
-        }));
+        // Save to cache - wrapped in try-catch because Base64 images can exceed quota
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            data: { settings: fetchedSettings, portfolio: fetchedPortfolio, partners: fetchedPartners },
+            timestamp: Date.now()
+          }));
+        } catch (cacheError) {
+          console.warn("Failed to save to cache (likely quota exceeded):", cacheError);
+          // If quota exceeded, clear old cache to try and make room next time (optional)
+          if (cacheError instanceof Error && cacheError.name === 'QuotaExceededError') {
+            localStorage.removeItem(CACHE_KEY);
+          }
+        }
 
         setIsDataLoaded(true);
       } catch (error) {

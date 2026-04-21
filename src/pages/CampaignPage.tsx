@@ -486,9 +486,9 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                           {item.title && <h4 className="text-xl font-bold leading-tight break-keep">{item.title}</h4>}
                           
                           <div className="flex flex-col space-y-1 text-sm text-white/60">
-                            {(item.year || item.clientOrCandidate) && (
+                            {item.clientOrCandidate && (
                               <span className="font-medium text-amber-500/80 uppercase tracking-wider break-keep">
-                                {item.year}{item.year && item.clientOrCandidate ? ' | ' : ''}{item.clientOrCandidate}
+                                {item.clientOrCandidate}
                               </span>
                             )}
                             
@@ -511,15 +511,24 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               </div>
             )}
 
-            {filteredPortfolio.length > visibleCount && (
+            {filteredPortfolio.length > 6 && (
               <div className="mt-20 flex justify-center">
                 <button
-                  onClick={() => setVisibleCount(prev => prev + 6)}
+                  onClick={() => {
+                    if (visibleCount >= filteredPortfolio.length) {
+                      setVisibleCount(6);
+                      document.getElementById('campaign-portfolio-section')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      setVisibleCount(prev => Math.min(prev + 12, filteredPortfolio.length));
+                    }
+                  }}
                   className="group flex flex-col items-center space-y-2 text-white/40 hover:text-amber-500 transition-colors"
                 >
-                  <span className="text-xs font-bold tracking-[0.3em] uppercase">Show More Items</span>
+                  <span className="text-xs font-bold tracking-[0.3em] uppercase">
+                    {visibleCount >= filteredPortfolio.length ? 'View Less Items' : 'Show More Items'}
+                  </span>
                   <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:border-amber-500 transition-colors">
-                    <ChevronDown />
+                    {visibleCount >= filteredPortfolio.length ? <ChevronUp /> : <ChevronDown />}
                   </div>
                 </button>
               </div>
@@ -544,11 +553,26 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-6 relative">
-              <div className="hidden md:block absolute top-[40px] left-[8.33%] right-[8.33%] h-px bg-white/5 z-0" />
+            <motion.div 
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.2,
+                    delayChildren: 0.3
+                  }
+                }
+              }}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-50px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 relative"
+            >
+              <div className="hidden lg:block absolute top-[40px] left-[8.33%] right-[8.33%] h-px bg-white/5 z-0" />
               
               {/* Moving Light Beam Effect */}
-              <div className="hidden md:block absolute top-[40px] left-[8.33%] right-[8.33%] h-[1px] z-0 overflow-hidden">
+              <div className="hidden lg:block absolute top-[40px] left-[8.33%] right-[8.33%] h-[1px] z-0 overflow-hidden">
                 <motion.div 
                   initial={{ x: "-100%" }}
                   animate={{ x: "400%" }}
@@ -570,10 +594,19 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               ].map((item, idx) => (
                 <motion.div 
                   key={idx} 
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  variants={{
+                    hidden: { opacity: 0, y: 80, scale: 0.8, rotate: -5 },
+                    show: { 
+                      opacity: 1, 
+                      y: 0,
+                      scale: 1, 
+                      rotate: 0,
+                      transition: {
+                        duration: 0.8,
+                        ease: [0.34, 1.56, 0.64, 1]
+                      }
+                    }
+                  }}
                   className="relative z-10 flex flex-col items-center text-center group"
                 >
                   {/* Step Hexagon/Circle Container */}
@@ -600,7 +633,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
                   </div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 

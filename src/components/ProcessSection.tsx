@@ -40,7 +40,7 @@ interface ProcessSectionProps {
 }
 
 export default function ProcessSection({ settings }: ProcessSectionProps) {
-  const defaultImageUrl = "https://picsum.photos/seed/light-glow/1920/1080";
+  const defaultImageUrl = "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&q=80&w=1920";
   const processImg = settings?.processImageUrl || defaultImageUrl;
 
   return (
@@ -53,7 +53,7 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
           </div>
         </div>
 
-        <div className="relative aspect-[21/9] rounded-3xl overflow-hidden mb-24 group">
+        <div className="relative aspect-square sm:aspect-video lg:aspect-[21/9] rounded-3xl overflow-hidden mb-24 group">
           <img
             src={processImg}
             alt="Vision Background"
@@ -65,20 +65,20 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
             initial="initial"
             whileInView="animate"
             viewport={{ once: true, margin: "-100px" }}
-            className="absolute inset-0 flex items-center justify-center p-8 text-center"
+            className="absolute inset-0 flex items-center justify-center p-6 sm:p-12 text-center"
           >
-            <div className="max-w-5xl space-y-8">
+            <div className="max-w-5xl space-y-6 md:space-y-8">
               <motion.h3 
                 variants={{
                   initial: { opacity: 0, y: 20, filter: 'blur(10px)' },
                   animate: { opacity: 1, y: 0, filter: 'blur(0px)' }
                 }}
                 transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="text-xl md:text-3xl font-regular leading-normal break-keep"
+                className="text-lg sm:text-2xl lg:text-3xl font-regular leading-relaxed md:leading-normal break-keep px-2"
               >
-                마음을 울리는 한 편의 영상이 한 사람의 생각을 바꾸고,<br />
-                그 변화가 세상을 움직이는 <span className="text-amber-500 font-bold">시작점</span>이라 믿습니다.<br />
-                단순히 미디어 콘텐츠를 만드는 것을 넘어, 사람의 마음을 움직이고<br />
+                마음을 울리는 한 편의 영상이 한 사람의 생각을 바꾸고,<br className="hidden sm:block" />
+                그 변화가 세상을 움직이는 <span className="text-amber-500 font-bold">시작점</span>이라 믿습니다.<br className="hidden sm:block" />
+                단순히 미디어 콘텐츠를 만드는 것을 넘어, 사람의 마음을 움직이고<br className="hidden sm:block" />
                 세상을 밝히는 <span className="text-amber-500 font-bold">미디어 프로덕션</span>이 되겠습니다.
               </motion.h3>
               <motion.div 
@@ -87,9 +87,9 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
                   animate: { opacity: 1, y: 0 }
                 }}
                 transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                className="text-white/40 italic text-sm md:text-base"
+                className="text-white/40 italic text-xs sm:text-sm md:text-base px-4"
               >
-                "Arise, shine; for thy light is come, and the glory of the Lord is risen upon thee."<br />
+                "Arise, shine; for thy light is come, and the glory of the Lord is risen upon thee."<br className="hidden sm:block" />
                 (Isaiah 60:1, KJV)
               </motion.div>
             </div>
@@ -101,17 +101,37 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
           {/* Connection Line */}
           <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/5 hidden lg:block -translate-y-1/2" />
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-12 relative z-10">
+          <motion.div 
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.2, // Increased stagger for "01 to 06" feel
+                  delayChildren: 0.3
+                }
+              }
+            }}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid md:grid-cols-2 lg:grid-cols-6 gap-12 relative z-10"
+          >
             {steps.map((step, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30, scale: 0.9, filter: 'blur(10px)' }}
-                whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ 
-                  duration: 0.8, 
-                  delay: i * 0.1,
-                  ease: [0.22, 1, 0.36, 1]
+                variants={{
+                  hidden: { opacity: 0, y: 80, scale: 0.8, rotate: -5 },
+                  show: { 
+                    opacity: 1, 
+                    y: 0,
+                    scale: 1,
+                    rotate: 0,
+                    transition: {
+                      duration: 0.8,
+                      ease: [0.34, 1.56, 0.64, 1] // Bouncy/Elastic feel
+                    }
+                  }
                 }}
                 className="flex flex-col items-center text-center group"
               >
@@ -128,7 +148,7 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
                 </p>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
