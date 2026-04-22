@@ -158,16 +158,22 @@ export default function ContactSection() {
           </div>
         </div>
 
-        <div className="mt-24 h-[450px] rounded-3xl overflow-hidden border border-white/10">
-          <iframe
-            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDxlkP0tf6ujxPeGWFWfsKF2DiLyk2rBU4&q=place_id:ChIJf5_HVFWhfDURGbkXBIcIdwg"
-            width="100%"
-            height="100%"
-            style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
+        <div className="mt-24 h-[450px] rounded-3xl overflow-hidden border border-white/10 relative">
+          {!import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+            <div className="w-full h-full flex items-center justify-center bg-white/5 text-white/40">
+              <p>Google Maps API Key가 설정되지 않았습니다.</p>
+            </div>
+          ) : (
+            <iframe
+              src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=place_id:ChIJf5_HVFWhfDURGbkXBIcIdwg`}
+              width="100%"
+              height="100%"
+              style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          )}
         </div>
       </div>
     </section>
