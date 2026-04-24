@@ -115,7 +115,7 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-2 lg:grid-cols-6 gap-12 relative z-10"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-10 sm:gap-12 relative z-10"
           >
             {steps.map((step, i) => (
               <motion.div

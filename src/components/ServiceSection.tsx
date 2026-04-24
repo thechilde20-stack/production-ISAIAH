@@ -117,7 +117,7 @@ export default function ServiceSection() {
             <h4 className="text-amber-500 font-bold tracking-widest mb-4 uppercase">Organization</h4>
             <h3 className="text-2xl md:text-3xl font-bold tracking-tighter">브랜드의 가치를 높이고, 변화를 만들어가는 전문가들입니다.</h3>
           </div>
-          <div className="grid md:grid-cols-4 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
             {teams.map((team, index) => (
               <motion.div
                 key={team.name}
@@ -125,7 +125,7 @@ export default function ServiceSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-black p-8 hover:bg-white/5 transition-colors group"
+                className="bg-black p-4 sm:p-8 hover:bg-white/5 transition-colors group"
               >
                 <team.icon className="w-12 h-12 text-amber-500 mb-6 group-hover:scale-110 transition-transform" />
                 <div className="w-full h-px bg-amber-500/20 mb-6" />

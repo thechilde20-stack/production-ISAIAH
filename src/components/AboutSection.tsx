@@ -108,7 +108,7 @@ export default function AboutSection({ settings }: AboutSectionProps) {
           </motion.div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {whyIsaiah.map((item, index) => (
             <motion.div
               key={item.title}
@@ -116,7 +116,7 @@ export default function AboutSection({ settings }: AboutSectionProps) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="p-8 bg-white/5 border border-white/10 rounded-2xl hover:border-amber-500/30 transition-all group"
+              className="p-4 sm:p-8 bg-white/5 border border-white/10 rounded-2xl hover:border-amber-500/30 transition-all group"
             >
               <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mb-8 group-hover:bg-amber-500 transition-colors">
                 <item.icon className="w-6 h-6 text-amber-500 group-hover:text-black transition-colors" />

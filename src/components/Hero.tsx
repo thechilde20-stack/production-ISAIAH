@@ -1,5 +1,6 @@
-import YouTube from 'react-youtube';
-import { motion } from 'motion/react';
+import YouTube, { YouTubeProps } from 'react-youtube';
+import { motion, AnimatePresence } from 'motion/react';
+import { useState } from 'react';
 import { SiteSettings } from '../types';
 import { extractYoutubeId } from '../lib/utils';
 
@@ -8,21 +9,25 @@ interface HeroProps {
 }
 
 export default function Hero({ settings }: HeroProps) {
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const videoId = extractYoutubeId(settings?.heroVideoId || 'U46x9TtmO40');
 
-  const opts = {
+  const opts: YouTubeProps['opts'] = {
     width: '100%',
     height: '100%',
     playerVars: {
       autoplay: 1,
       controls: 0,
       rel: 0,
-      showinfo: 0,
       mute: 1,
       loop: 1,
       playlist: videoId,
       modestbranding: 1,
       playsinline: 1,
+      showinfo: 0,
+      iv_load_policy: 3,
+      disablekb: 1,
+      fs: 0,
       start: 0,
       origin: typeof window !== 'undefined' ? window.location.origin : '',
     },
@@ -30,23 +35,46 @@ export default function Hero({ settings }: HeroProps) {
 
   return (
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
-      {/* Video Background */}
+      {/* Video Background Container */}
       <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] h-[115%] min-w-full min-h-full">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isVideoReady ? 1 : 0 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] h-[115%] min-w-full min-h-full"
+        >
           <YouTube
             key={videoId}
             videoId={videoId}
             opts={opts}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
             iframeClassName="w-full h-full scale-[1.35]"
             onReady={(event) => {
-              event.target.playVideo();
+              // Mute is essential for autoplay
               event.target.mute();
+              event.target.playVideo();
+            }}
+            onStateChange={(event) => {
+              // State 1 is "playing"
+              if (event.data === 1) {
+                setIsVideoReady(true);
+              }
             }}
           />
-        </div>
+        </motion.div>
       </div>
 
+      {/* Placeholder/Loading Overlay (Prevents seeing YouTube UI/Play button) */}
+      <AnimatePresence>
+        {!isVideoReady && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0 bg-black z-0"
+          />
+        )}
+      </AnimatePresence>
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
 

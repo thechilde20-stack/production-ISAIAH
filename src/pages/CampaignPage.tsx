@@ -567,7 +567,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: "-50px" }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 relative"
+              className="grid grid-cols-2 lg:grid-cols-6 gap-x-4 gap-y-10 sm:gap-6 relative"
             >
               <div className="hidden lg:block absolute top-[40px] left-[8.33%] right-[8.33%] h-px bg-white/5 z-0" />
               
