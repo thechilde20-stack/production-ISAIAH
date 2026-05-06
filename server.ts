@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
@@ -10,7 +11,14 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json({ limit: '50mb' }));
+  app.use(express.json({ limit: '100kb' }));
+
+  // Rate limiter for email endpoint
+  const emailLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per `window` (here, per 15 minutes)
+    message: { error: "Too many requests, please try again later." }
+  });
 
   // Health check
   app.get("/api/health", (req, res) => {
@@ -18,7 +26,7 @@ async function startServer() {
   });
 
   // API Route for sending emails
-  app.post("/api/send-email", async (req, res) => {
+  app.post("/api/send-email", emailLimiter, async (req, res) => {
     const { name, email, phone, message } = req.body;
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {

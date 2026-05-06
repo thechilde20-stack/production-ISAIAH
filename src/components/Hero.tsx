@@ -1,6 +1,6 @@
 import YouTube, { YouTubeProps } from 'react-youtube';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SiteSettings } from '../types';
 import { extractYoutubeId } from '../lib/utils';
 
@@ -12,7 +12,7 @@ export default function Hero({ settings }: HeroProps) {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const videoId = extractYoutubeId(settings?.heroVideoId || 'U46x9TtmO40');
 
-  const opts: YouTubeProps['opts'] = {
+  const opts: YouTubeProps['opts'] = useMemo(() => ({
     width: '100%',
     height: '100%',
     playerVars: {
@@ -31,7 +31,7 @@ export default function Hero({ settings }: HeroProps) {
       start: 0,
       origin: typeof window !== 'undefined' ? window.location.origin : '',
     },
-  };
+  }), [videoId]);
 
   return (
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
@@ -71,7 +71,7 @@ export default function Hero({ settings }: HeroProps) {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
-            className="absolute inset-0 bg-black z-0"
+            className="absolute inset-0 bg-black z-0 pointer-events-none"
           />
         )}
       </AnimatePresence>
@@ -83,7 +83,7 @@ export default function Hero({ settings }: HeroProps) {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
+          transition={{ duration: 0.8, delay: 1.5 }}
           className="space-y-6"
         >
           <h4 className="text-[var(--accent-color)] font-primary font-bold text-xl md:text-2xl">
@@ -102,7 +102,7 @@ export default function Hero({ settings }: HeroProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
+        transition={{ delay: 2.5, duration: 1 }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-2"
       >
         <span className="text-white/40 text-xs tracking-widest uppercase">Scroll</span>

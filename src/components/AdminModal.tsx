@@ -76,20 +76,6 @@ function PortfolioItemRow({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  useEffect(() => { setLocalTitle(item.title); }, [item.title]);
-  useEffect(() => { setLocalVideoUrl(item.videoUrl); }, [item.videoUrl]);
-  useEffect(() => { setLocalInfo(item.info || item.description || ''); }, [item.info, item.description]);
-  useEffect(() => { 
-    setLocalCategories(item.categories || (item.category ? [item.category] : [])); 
-  }, [item.categories, item.category]);
-  useEffect(() => { setLocalThumbnail(item.thumbnail || ''); }, [item.thumbnail]);
-  useEffect(() => { setLocalSection(item.section || 'general'); }, [item.section]);
-  useEffect(() => { setLocalClient(item.clientOrCandidate || ''); }, [item.clientOrCandidate]);
-  useEffect(() => { setLocalTags(item.tags || []); }, [item.tags]);
-  useEffect(() => { 
-    setLocalTiers(item.campaignTiers || (item.campaignTier ? [item.campaignTier] : [])); 
-  }, [item.campaignTiers, item.campaignTier]);
-
   const handleBlur = (field: string, value: string) => {
     let finalValue = value;
     if (field === 'videoUrl') {
@@ -402,9 +388,6 @@ function PartnerRow({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  useEffect(() => { setLocalName(partner.name); }, [partner.name]);
-  useEffect(() => { setLocalLogoUrl(partner.logoUrl); }, [partner.logoUrl]);
-
   const handleBlur = (field: string, value: any) => {
     if (partner[field as keyof Partner] !== value) {
       onUpdate(partner.id, { [field]: value });
@@ -645,8 +628,8 @@ function ContactRow({
   );
 }
 
-export default function AdminModal() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function AdminModal({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);

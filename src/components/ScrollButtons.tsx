@@ -8,22 +8,29 @@ export default function ScrollButtons() {
   const [showBottom, setShowBottom] = useState(false);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const fullHeight = document.documentElement.scrollHeight;
-      
-      // All buttons stay hidden until scrolled down 400px
-      const isNearTop = scrollY < 400;
-      
-      // Show top button after scrolling down 400px
-      setShowTop(!isNearTop);
-      
-      // Show bottom button only after 400px descent AND if not near the very bottom
-      setShowBottom(!isNearTop && scrollY + windowHeight < fullHeight - 400);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const windowHeight = window.innerHeight;
+          const fullHeight = document.documentElement.scrollHeight;
+          
+          // All buttons stay hidden until scrolled down 400px
+          const isNearTop = scrollY < 400;
+          
+          // Show top button after scrolling down 400px
+          setShowTop(!isNearTop);
+          
+          // Show bottom button only after 400px descent AND if not near the very bottom
+          setShowBottom(!isNearTop && scrollY + windowHeight < fullHeight - 400);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     // Initial check
     handleScroll();
     

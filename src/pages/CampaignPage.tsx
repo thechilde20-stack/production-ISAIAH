@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Play, 
@@ -47,8 +47,27 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
   const [activeTier, setActiveTier] = useState('ALL');
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(6);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const rawVideoId = settings?.campaignHeroVideoId || '0BKvOfTyLmU';
   const campaignVideoId = extractYoutubeId(rawVideoId);
+
+  const opts = useMemo(() => ({
+    width: '100%',
+    height: '100%',
+    playerVars: {
+      autoplay: 1,
+      controls: 0,
+      rel: 0,
+      showinfo: 0,
+      mute: 1,
+      loop: 1,
+      playlist: campaignVideoId,
+      modestbranding: 1,
+      playsinline: 1,
+      start: 0,
+      origin: typeof window !== 'undefined' ? window.location.origin : '',
+    },
+  }), [campaignVideoId]);
 
   // Filter campaign portfolio
   const campaignPortfolio = portfolio
@@ -81,36 +100,42 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
         <section className="relative h-[90vh] w-full overflow-hidden flex items-end justify-end bg-black pb-24 md:pb-32">
           {/* Video Background */}
           <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] h-[115%] min-w-full min-h-full">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isVideoReady ? 1 : 0 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[56.25vw] min-w-[177.77vh] min-h-[100vh]"
+            >
               <YouTube
                 key={campaignVideoId}
                 videoId={campaignVideoId}
-                opts={{
-                  width: '100%',
-                  height: '100%',
-                  playerVars: {
-                    autoplay: 1,
-                    controls: 0,
-                    rel: 0,
-                    showinfo: 0,
-                    mute: 1,
-                    loop: 1,
-                    playlist: campaignVideoId,
-                    modestbranding: 1,
-                    playsinline: 1,
-                    start: 0,
-                    origin: typeof window !== 'undefined' ? window.location.origin : '',
-                  },
-                }}
-                className="w-full h-full object-cover"
-                iframeClassName="w-full h-full scale-[1.35]"
+                opts={opts}
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                iframeClassName="w-full h-full pointer-events-none scale-[1.25]"
                 onReady={(event) => {
-                  event.target.playVideo();
                   event.target.mute();
+                  event.target.playVideo();
+                }}
+                onStateChange={(event) => {
+                  if (event.data === 1) {
+                    setIsVideoReady(true);
+                  }
                 }}
               />
-            </div>
+            </motion.div>
           </div>
+
+          {/* Placeholder/Loading Overlay */}
+          <AnimatePresence>
+            {!isVideoReady && (
+              <motion.div 
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+                className="absolute inset-0 bg-black z-0 pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
 
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
@@ -119,7 +144,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.8, delay: 1.0 }}
               className="flex flex-wrap justify-end gap-3 mb-8"
             >
               {(settings?.campaignHeroSubcopy ? settings.campaignHeroSubcopy.split(',').map(s => s.trim()) : ['Real-time Workflow', 'Cinematic Story']).map((tag) => (
@@ -132,7 +157,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              transition={{ duration: 0.8, delay: 1.2 }}
               className="text-3xl md:text-5xl font-bold tracking-tighter leading-[1.25] mb-8 break-keep bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-300 whitespace-pre-line text-right"
             >
               {settings?.campaignHeroHeadline || "선거는 초단위의 속도전,\n메시지는 영상이 될 때 힘을 가집니다."}
@@ -141,7 +166,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              transition={{ duration: 0.8, delay: 1.4 }}
               className="text-white/60 text-lg md:text-xl max-w-3xl ml-auto mb-4 leading-relaxed break-keep whitespace-pre-line text-right"
             >
               {settings?.campaignHeroDescription || "기획, 촬영, 편집, 현장 대응, 라이브, 브랜딩까지\n후보와 캠프의 철학을 유권자에게 전달하는 캠페인 미디어 통합 솔루션"}
@@ -152,7 +177,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.5, duration: 1 }}
+            transition={{ delay: 2.5, duration: 1 }}
             className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-2 pointer-events-none"
           >
             <span className="text-white/40 text-[10px] tracking-widest uppercase">Scroll</span>

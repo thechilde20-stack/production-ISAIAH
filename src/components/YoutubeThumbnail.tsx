@@ -7,24 +7,31 @@ interface YoutubeThumbnailProps {
   className?: string;
 }
 
+const urlCache = new Map<string, string>();
+
 export default function YoutubeThumbnail({ videoId, alt, className }: YoutubeThumbnailProps) {
-  const [src, setSrc] = useState<string>(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
+  const [src, setSrc] = useState<string>(urlCache.get(videoId) || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
 
   useEffect(() => {
+    if (urlCache.has(videoId)) return;
+
     const checkImage = (url: string) => {
       const img = new Image();
       img.src = url;
       img.onload = () => {
         // YouTube returns a 120x90 placeholder when maxresdefault is not available
+        let finalUrl = url;
         if (img.width === 120 && url.includes('maxresdefault')) {
-          setSrc(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
-        } else {
-          setSrc(url);
+          finalUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
         }
+        urlCache.set(videoId, finalUrl);
+        setSrc(finalUrl);
       };
       img.onerror = () => {
         if (url.includes('maxresdefault')) {
-          setSrc(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);
+          const fallbackUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          urlCache.set(videoId, fallbackUrl);
+          setSrc(fallbackUrl);
         }
       };
     };
@@ -38,6 +45,8 @@ export default function YoutubeThumbnail({ videoId, alt, className }: YoutubeThu
       alt={alt}
       className={cn("w-full h-full object-cover transition-transform duration-700", className)}
       referrerPolicy="no-referrer"
+      loading="lazy"
+      decoding="async"
     />
   );
 }

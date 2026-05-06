@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -9,13 +9,33 @@ import ProcessSection from './components/ProcessSection';
 import PartnersSection from './components/PartnersSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
-import AdminModal from './components/AdminModal';
 import ScrollButtons from './components/ScrollButtons';
-import CampaignPage from './pages/CampaignPage';
 import { db } from './firebase';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { SiteSettings, PortfolioItem, Partner } from './types';
 import { handleFirestoreError, OperationType } from './firebase';
+
+const CampaignPage = lazy(() => import('./pages/CampaignPage'));
+const AdminModal = lazy(() => import('./components/AdminModal'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+function AdminMount() {
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setIsAdminOpen(true);
+    window.addEventListener('open-admin', handleOpen);
+    return () => window.removeEventListener('open-admin', handleOpen);
+  }, []);
+
+  if (!isAdminOpen) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <AdminModal initialOpen={true} />
+    </Suspense>
+  );
+}
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -71,14 +91,17 @@ export default function App() {
         // Try to load from cache first
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < CACHE_TTL) {
-            setSettings(data.settings);
-            setPortfolio(data.portfolio);
-            setPartners(data.partners);
-            setIsDataLoaded(true);
-            applyGlobalStyles(data.settings);
-            return;
+          try {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < CACHE_TTL) {
+              setSettings(data.settings);
+              setPortfolio(data.portfolio);
+              setPartners(data.partners);
+              setIsDataLoaded(true);
+              applyGlobalStyles(data.settings);
+            }
+          } catch (e) {
+            console.warn("Invalid cache data", e);
           }
         }
 
@@ -87,17 +110,18 @@ export default function App() {
         let fetchedPortfolio: PortfolioItem[] = [];
         let fetchedPartners: Partner[] = [];
 
-        const [settingsSnapResult, campaignSnapResult] = await Promise.allSettled([
+        const settingsPromises = [
           getDoc(doc(db, 'settings', 'main')),
           getDoc(doc(db, 'settings', 'campaign'))
-        ]);
+        ];
+        const settingsSnapResult = await Promise.allSettled(settingsPromises);
         
         let settingsData = {};
-        if (settingsSnapResult.status === 'fulfilled' && settingsSnapResult.value.exists()) {
-          settingsData = { ...settingsData, ...settingsSnapResult.value.data() };
+        if (settingsSnapResult[0].status === 'fulfilled' && settingsSnapResult[0].value.exists()) {
+          settingsData = { ...settingsData, ...settingsSnapResult[0].value.data() };
         }
-        if (campaignSnapResult.status === 'fulfilled' && campaignSnapResult.value.exists()) {
-          settingsData = { ...settingsData, ...campaignSnapResult.value.data() };
+        if (settingsSnapResult[1].status === 'fulfilled' && settingsSnapResult[1].value.exists()) {
+          settingsData = { ...settingsData, ...settingsSnapResult[1].value.data() };
         }
         
         if (Object.keys(settingsData).length > 0) {
@@ -106,30 +130,48 @@ export default function App() {
           applyGlobalStyles(fetchedSettings);
         }
 
-        // 2. Fetch Portfolio
+        // 2 & 3. Fetch Portfolio and Partners in parallel
         try {
-          const portfolioSnap = await getDocs(query(collection(db, 'portfolio'), orderBy('order', 'asc')));
+          const [portfolioSnap, partnersSnap] = await Promise.all([
+            getDocs(query(collection(db, 'portfolio'), orderBy('order', 'asc'))),
+            getDocs(query(collection(db, 'partners'), orderBy('order', 'asc')))
+          ]);
+          
           fetchedPortfolio = portfolioSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioItem));
           setPortfolio(fetchedPortfolio);
-        } catch (err) {
-          console.error("Portfolio fetch failed:", err);
-        }
-
-        // 3. Fetch Partners
-        try {
-          const partnersSnap = await getDocs(query(collection(db, 'partners'), orderBy('order', 'asc')));
+          
           fetchedPartners = partnersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Partner));
           setPartners(fetchedPartners);
         } catch (err) {
-          console.error("Partners fetch failed:", err);
+          console.error("Data fetch failed:", err);
         }
 
         // Save to cache - wrapped in try-catch because Base64 images can exceed quota
         try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({
-            data: { settings: fetchedSettings, portfolio: fetchedPortfolio, partners: fetchedPartners },
+          const sanitizeForCache = (obj: any) => {
+            if (!obj) return obj;
+            return JSON.parse(JSON.stringify(obj, (key, value) => {
+              // If string starts with data:image (base64) don't cache it
+              if (typeof value === 'string' && value.startsWith('data:image')) {
+                return undefined;
+              }
+              return value;
+            }));
+          };
+
+          const cacheData = JSON.stringify({
+            data: { 
+              settings: sanitizeForCache(fetchedSettings), 
+              portfolio: sanitizeForCache(fetchedPortfolio), 
+              partners: sanitizeForCache(fetchedPartners) 
+            },
             timestamp: Date.now()
-          }));
+          });
+
+          // Only cache if < 1MB (1024 * 1024 chars)
+          if (cacheData.length < 1048576) {
+            localStorage.setItem(CACHE_KEY, cacheData);
+          }
         } catch (cacheError) {
           console.warn("Failed to save to cache (likely quota exceeded):", cacheError);
           // If quota exceeded, clear old cache to try and make room next time (optional)
@@ -195,11 +237,19 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<HomePage settings={settings} portfolio={portfolio} partners={partners} isDataLoaded={isDataLoaded} />} />
-          <Route path="/campaign" element={<CampaignPage settings={settings} portfolio={portfolio} isLoaded={isDataLoaded} />} />
-          <Route path="*" element={<HomePage settings={settings} portfolio={portfolio} partners={partners} isDataLoaded={isDataLoaded} />} />
+          <Route path="/campaign" element={
+            <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white/50">Loading...</div>}>
+              <CampaignPage settings={settings} portfolio={portfolio} isLoaded={isDataLoaded} />
+            </Suspense>
+          } />
+          <Route path="*" element={
+            <Suspense fallback={<div className="min-h-screen bg-black" />}>
+              <NotFoundPage />
+            </Suspense>
+          } />
         </Routes>
         <Footer />
-        <AdminModal />
+        <AdminMount />
         <ScrollButtons />
       </div>
     </BrowserRouter>

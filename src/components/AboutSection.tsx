@@ -78,6 +78,8 @@ export default function AboutSection({ settings }: AboutSectionProps) {
                 alt="Professional studio film production" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             

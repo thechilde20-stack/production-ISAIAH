@@ -48,10 +48,9 @@ export default function PartnersSection({ initialData, isLoaded }: PartnersSecti
           <div className="flex overflow-hidden group">
             <div className="flex gap-4 md:gap-6 whitespace-nowrap animate-marquee group-hover:pause">
               {[...sortedPartners, ...sortedPartners].map((partner, index) => (
-                <motion.div
+                <div
                   key={`${partner.id}-${index}`}
-                  whileHover={{ y: -5 }}
-                  className="flex flex-col items-center justify-center p-3 transition-all duration-500 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 w-40 md:w-52 flex-shrink-0 group/partner"
+                  className="flex flex-col items-center justify-center p-3 transition-all duration-500 bg-white/5 rounded-2xl border border-white/5 hover:border-amber-500/30 hover:-translate-y-1 w-40 md:w-52 flex-shrink-0 group/partner"
                 >
                   <div className="h-12 md:h-16 flex items-center justify-center">
                     {partner.logoUrl ? (
@@ -60,6 +59,8 @@ export default function PartnersSection({ initialData, isLoaded }: PartnersSecti
                         alt={partner.name}
                         className="max-w-full max-h-full object-contain brightness-0 invert opacity-50 group-hover/partner:brightness-100 group-hover/partner:invert-0 group-hover/partner:opacity-100 transition-all duration-500"
                         referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <span className="text-white/20 text-xs font-bold group-hover/partner:text-amber-500 transition-colors">
@@ -67,7 +68,7 @@ export default function PartnersSection({ initialData, isLoaded }: PartnersSecti
                       </span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>

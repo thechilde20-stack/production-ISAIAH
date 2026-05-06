@@ -59,6 +59,8 @@ export default function ProcessSection({ settings }: ProcessSectionProps) {
             alt="Vision Background"
             className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700"
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
           <motion.div 
