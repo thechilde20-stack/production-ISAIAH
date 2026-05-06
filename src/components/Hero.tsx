@@ -41,14 +41,14 @@ export default function Hero({ settings }: HeroProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: isVideoReady ? 1 : 0 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] h-[115%] min-w-full min-h-full"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[56.25vw] min-w-[177.77vh] min-h-[100vh]"
         >
           <YouTube
             key={videoId}
             videoId={videoId}
             opts={opts}
-            className="w-full h-full"
-            iframeClassName="w-full h-full scale-[1.35]"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            iframeClassName="w-full h-full pointer-events-none scale-[1.25]"
             onReady={(event) => {
               // Mute is essential for autoplay
               event.target.mute();
