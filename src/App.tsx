@@ -7,6 +7,7 @@ import ServiceSection from './components/ServiceSection';
 import PortfolioSection from './components/PortfolioSection';
 import ProcessSection from './components/ProcessSection';
 import PartnersSection from './components/PartnersSection';
+import FAQSection from './components/FAQSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import ScrollButtons from './components/ScrollButtons';
@@ -71,6 +72,7 @@ function HomePage({ settings, portfolio, partners, isDataLoaded }: {
       <PortfolioSection initialData={portfolio.filter(item => item.section !== 'campaign-portfolio')} isLoaded={isDataLoaded} />
       <ProcessSection settings={settings} />
       <PartnersSection initialData={partners} isLoaded={isDataLoaded} />
+      <FAQSection />
       <ContactSection />
     </main>
   );
