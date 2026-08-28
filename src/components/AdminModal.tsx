@@ -646,7 +646,7 @@ export default function AdminModal({ initialOpen = false }: { initialOpen?: bool
   const [uploadingSettings, setUploadingSettings] = useState<Record<string, boolean>>({});
   const [settings, setSettings] = useState<SiteSettings>({
     heroVideoId: 'U46x9TtmO40',
-    heroHeadline: '사람의 마음을 움직이고,\n브랜드 메세지는 선명하게!',
+    heroHeadline: '마음을 움직이는 이야기,\n오래 남는 메세지.',
     heroSubcopy: '프로덕션 이사야',
     heroDescription: '공공기관·브랜드·다큐멘터리·교육 콘텐츠를\n기획부터 완성까지, 신뢰할 수 있는 파트너 프로덕션 이사야입니다.',
     siteTitle: '프로덕션 이사야 | PRODUCTION ISAIAH',
