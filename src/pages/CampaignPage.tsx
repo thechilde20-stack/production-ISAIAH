@@ -71,7 +71,7 @@ export default function CampaignPage({ settings, portfolio, isLoaded }: Campaign
 
   // Filter campaign portfolio
   const campaignPortfolio = portfolio
-    .filter(item => item.section === 'campaign-portfolio')
+    .filter(item => item.section === 'campaign-portfolio' && !item.hidden)
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
   const filteredPortfolio = activeTier === 'ALL'

@@ -17,6 +17,7 @@ export interface PortfolioItem {
   sortOrder?: number;
   campaignTiers?: string[];
   campaignTier?: string; // For backward compatibility
+  hidden?: boolean; // Whether the item is temporarily hidden from the public site
 }
 
 export interface ContactMessage {

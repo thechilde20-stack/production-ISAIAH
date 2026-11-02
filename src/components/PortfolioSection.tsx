@@ -56,9 +56,9 @@ export default function PortfolioSection({ initialData, isLoaded }: PortfolioSec
   useEffect(() => {
     if (isLoaded) {
       if (initialData.length > 0) {
-        setPortfolio(initialData);
+        setPortfolio(initialData.filter(item => !item.hidden));
       } else {
-        setPortfolio(MOCK_PORTFOLIO);
+        setPortfolio(MOCK_PORTFOLIO.filter(item => !item.hidden));
       }
     }
   }, [initialData, isLoaded]);

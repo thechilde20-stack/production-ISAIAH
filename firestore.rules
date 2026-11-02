@@ -90,7 +90,10 @@ service cloud.firestore {
              (!('year' in data) || (data.year is string && data.year.size() <= 50)) &&
              (!('clientOrCandidate' in data) || (data.clientOrCandidate is string && data.clientOrCandidate.size() <= 100)) &&
              (!('tags' in data) || (data.tags is list && data.tags.size() <= 10)) &&
-             (!('sortOrder' in data) || data.sortOrder is number);
+             (!('sortOrder' in data) || data.sortOrder is number) &&
+             (!('campaignTiers' in data) || data.campaignTiers is list) &&
+             (!('campaignTier' in data) || data.campaignTier is string) &&
+             (!('hidden' in data) || data.hidden is bool);
     }
 
     // ===============================================================

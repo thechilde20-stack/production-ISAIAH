@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical } from 'lucide-react';
+import { Lock, X, AlertTriangle, Plus, Trash2, Save, ArrowUp, ArrowDown, Image as ImageIcon, ExternalLink, Upload, Loader2, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { cn, extractYoutubeId } from '@/src/lib/utils';
 import { Partner, PortfolioItem, ContactMessage, SiteSettings } from '../types';
 import { storage, db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
@@ -56,6 +56,8 @@ function PortfolioItemRow({
     transition,
     isDragging,
   } = useSortable({ id: item.id });
+
+  const isHidden = !!item.hidden;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -137,8 +139,9 @@ function PortfolioItemRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group transition-colors",
-        isDragging && "bg-amber-500/5 border-amber-500/30 ring-2 ring-amber-500/20"
+        "bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-6 group transition-all",
+        isDragging && "bg-amber-500/5 border-amber-500/30 ring-2 ring-amber-500/20",
+        isHidden && "opacity-60 bg-white/[0.02] border-dashed border-white/10 hover:opacity-100"
       )}
     >
       <div 
@@ -156,6 +159,13 @@ function PortfolioItemRow({
           <img src={`https://img.youtube.com/vi/${localVideoUrl}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
           <ImageIcon className="w-6 h-6 text-white/10" />
+        )}
+
+        {isHidden && (
+          <div className="absolute top-1 left-1 bg-black/80 backdrop-blur-sm text-zinc-400 border border-white/10 text-[9px] font-bold px-1.5 py-0.5 rounded z-20 flex items-center space-x-1">
+            <EyeOff className="w-2.5 h-2.5 text-zinc-400" />
+            <span>비노출</span>
+          </div>
         )}
         
         <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
@@ -329,18 +339,43 @@ function PortfolioItemRow({
       </div>
 
       <div className="flex items-center space-x-2">
+        {/* 노출 / 숨김 (잠시 꺼두기) 토글 버튼 */}
+        <button
+          type="button"
+          onClick={() => onUpdate(item.id, { hidden: !isHidden })}
+          className={cn(
+            "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+            isHidden
+              ? "bg-zinc-800/80 border-zinc-700/80 text-zinc-400 hover:text-white hover:border-zinc-500 hover:bg-zinc-700/80"
+              : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+          )}
+          title={isHidden ? "현재 비노출(숨김) 상태입니다. 클릭하면 홈페이지에 다시 노출됩니다." : "현재 홈페이지에 노출 중입니다. 클릭하면 잠시 숨깁니다."}
+        >
+          {isHidden ? (
+            <>
+              <EyeOff className="w-4 h-4 text-zinc-400" />
+              <span>숨김</span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4 text-emerald-400" />
+              <span>노출</span>
+            </>
+          )}
+        </button>
+
         {deleteConfirm?.id === item.id ? (
           <div className="flex items-center space-x-2 bg-red-500/10 border border-red-500/20 rounded-lg px-2 py-1">
             <span className="text-[10px] text-red-500 font-bold">삭제?</span>
             <button 
               onClick={() => onDelete(item.id)}
-              className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-md font-bold"
+              className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-md font-bold hover:bg-red-600 transition-colors"
             >
               네
             </button>
             <button 
               onClick={() => setDeleteConfirm(null)}
-              className="text-[10px] text-white/40"
+              className="text-[10px] text-white/40 hover:text-white transition-colors"
             >
               취소
             </button>
@@ -348,7 +383,8 @@ function PortfolioItemRow({
         ) : (
           <button
             onClick={() => setDeleteConfirm({ id: item.id, type: 'portfolio' })}
-            className="text-white/20 hover:text-red-500 transition-colors"
+            className="text-white/20 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-500/10"
+            title="포트폴리오 삭제"
           >
             <Trash2 className="w-5 h-5" />
           </button>

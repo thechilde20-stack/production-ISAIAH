@@ -32,6 +32,10 @@
         "createdAt": {
           "type": "number",
           "description": "Timestamp of creation."
+        },
+        "hidden": {
+          "type": "boolean",
+          "description": "Whether the portfolio item is hidden from the public website."
         }
       },
       "required": ["title", "category", "thumbnail", "videoUrl", "order", "createdAt"]

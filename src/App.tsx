@@ -69,7 +69,7 @@ function HomePage({ settings, portfolio, partners, isDataLoaded }: {
       <Hero settings={settings} />
       <AboutSection settings={settings} />
       <ServiceSection />
-      <PortfolioSection initialData={portfolio.filter(item => item.section !== 'campaign-portfolio')} isLoaded={isDataLoaded} />
+      <PortfolioSection initialData={portfolio.filter(item => item.section !== 'campaign-portfolio' && !item.hidden)} isLoaded={isDataLoaded} />
       <ProcessSection settings={settings} />
       <PartnersSection initialData={partners} isLoaded={isDataLoaded} />
       <FAQSection />
